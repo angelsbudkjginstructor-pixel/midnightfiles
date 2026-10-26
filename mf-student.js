@@ -29,7 +29,7 @@
 
   /* ------------------------------------------------------------------ screens */
   function show(id) {
-    ['s-join', 's-wait', 's-archive', 's-brief'].forEach(function (i) { $(i).hidden = (i !== id); }); $('game').hidden = (id !== 'game'); S.screen = id.replace(/^s-/, ''); if (id !== 'game' && MF.Music) MF.Music.set('menu');
+    ['s-join', 's-wait', 's-archive', 's-brief'].forEach(function (i) { $(i).hidden = (i !== id); }); $('game').hidden = (id !== 'game'); $('helpbtn').hidden = (id === 'game'); S.screen = id.replace(/^s-/, ''); if (id !== 'game' && MF.Music) MF.Music.set('menu');
   }
   function langButtons() {
     return '<div class="seg lang-seg">' + [['both', 'BM + EN'], ['bm', 'Bahasa Malaysia'], ['en', 'English']].map(function (l) { return '<button class="btn ghost small' + (MF.lang === l[0] ? ' on' : '') + '" data-lang="' + l[0] + '">' + l[1] + '</button>'; }).join('') + '</div>';
@@ -95,6 +95,11 @@
     else if (m.t === 'msg') { if (UI().toast && S.game) UI().toast('📣 <b>' + X('Teacher', 'Guru') + ':</b> ' + E(m.text), 'ev', 9000); else alertBox(m.text); }
     else if (m.t === 'share') onShare(m);
     else if (m.t === 'reset') { if (m.sid === S.sid || !m.sid) resetMine(); }
+    else if (m.t === 'rank') onRank(m.ranks || []);
+    else if (m.t === 'vote') onVote(m);
+    else if (m.t === 'voteWait') onVoteWait(m);
+    else if (m.t === 'voteEnd') onVoteEnd(m);
+    else if (m.t === 'teamGo') onTeamGo(m);
   }
   function alertBox(text) { var e = $('j-status') || $('w-msg'); if (e) e.innerHTML = '📣 ' + E(text); }
   function sendProg(force) {
@@ -181,12 +186,13 @@
       '<p class="big-p">' + MF.t(C.premise) + '</p>' +
       '<div class="statrow" style="margin:.6em 0">' + '<span class="chip big" style="--kc:#60a5fa">🎚 ' + MF.t(D.label) + '</span>' + '<span class="chip big" style="--kc:#a855f7">👻 ' + X('Scare', 'Seram') + ': ' + MF.t(MF.SCARE[cfg.scare]) + '</span>' + '<span class="chip big" style="--kc:#f59e0b">⏱ ' + (tmin > 0 ? tmin + ' ' + X('min', 'min') : X('No timer', 'Tiada pemasa')) + '</span>' + (S.team ? '<span class="chip big" style="--kc:#34d399">🤝 ' + E(S.team.name) + '</span>' : '') + '</div>' +
       '<div style="margin:.4em 0">' + subj + '</div>' +
-      '<div class="debrief"><h3>🎮 ' + X('Controls', 'Kawalan') + '</h3><div class="statrow" style="font-size:.95em"><span><kbd>W A S D</kbd> ' + X('move', 'bergerak') + '</span><span><kbd>Mouse</kbd> ' + X('look', 'melihat') + '</span><span><kbd>E</kbd> ' + X('look / talk', 'periksa / bual') + '</span><span><kbd>Shift</kbd> ' + X('run', 'lari') + '</span><span><kbd>Ctrl</kbd> / <kbd>C</kbd> ' + X('crouch', 'tunduk') + '</span><span><kbd>F</kbd> ' + X('flashlight', 'lampu suluh') + '</span><span><kbd>Tab</kbd> ' + X('notebook', 'buku nota') + '</span><span><kbd>Esc</kbd> ' + X('pause', 'jeda') + '</span></div></div>' +
+      '<div class="debrief"><h3>🎮 ' + X('Controls', 'Kawalan') + '</h3><div class="statrow" style="font-size:.95em"><span><kbd>W A S D</kbd> ' + X('move', 'bergerak') + '</span><span><kbd>Mouse</kbd> ' + X('look', 'melihat') + '</span><span><kbd>E</kbd> ' + X('look / talk', 'periksa / bual') + '</span><span><kbd>Shift</kbd> ' + X('run', 'lari') + '</span><span><kbd>Ctrl</kbd> / <kbd>C</kbd> ' + X('crouch', 'tunduk') + '</span><span><kbd>F</kbd> ' + X('flashlight', 'lampu suluh') + '</span><span><kbd>Tab</kbd> ' + X('notebook', 'buku nota') + '</span><span><kbd>H</kbd> ' + X('help', 'bantuan') + '</span><span><kbd>Esc</kbd> ' + X('pause', 'jeda') + '</span></div><p class="tip">🏆 ' + (st.mode === 'teams' ? X('The FIRST team to solve the case wins! Your whole team must vote YES to accuse.', 'Pasukan PERTAMA yang menyelesaikan kes menang! Seluruh pasukan mesti mengundi YA untuk menuduh.') : st.mode === 'solo' ? X('The FIRST player to solve the case wins!', 'Pemain PERTAMA yang menyelesaikan kes menang!') : '') + ' ❄️ ' + X('A wrong accusation freezes you for 60 seconds.', 'Tuduhan salah membekukan anda selama 60 saat.') + ' <a href="#" id="b-help">❓ ' + X('How to play', 'Cara bermain') + '</a></p></div>' +
       '<div id="b-err"></div><div class="t-ctrl">' + (canResume ? '<button class="btn primary big" id="b-resume">⏩ ' + X('Continue', 'Sambung') + '</button><button class="btn ghost" id="b-new">↺ ' + X('Start again', 'Mula semula') + '</button>' : '<button class="btn primary big" id="b-start">▶ ' + X('Start the case', 'Mulakan kes') + '</button>') + ((st.mode === 'free' || PREVIEW) ? '<button class="btn ghost" id="b-back">◀ ' + X('Archive', 'Arkib') + '</button>' : '') + '</div>' + langButtons() + '</div>';
     bindLang(el);
     var go = function (resume) { MF.Sfx.init(); startCase(id, resume); };
     if ($('b-start')) $('b-start').onclick = function () { go(false); }; if ($('b-resume')) $('b-resume').onclick = function () { go(true); };
     if ($('b-new')) $('b-new').onclick = function () { MF.store.del(saveKey(id)); renderBrief(id); };
+    $('b-help').onclick = function (e) { e.preventDefault(); openHelp(); };
     if ($('b-back')) $('b-back').onclick = function () { show('s-archive'); renderArchive(); };
   }
 
@@ -214,11 +220,13 @@
       teacherPaused: function () { return !!S.gate; },
       onModalChange: function (open) {
         if (open) { $('ov').innerHTML = ''; return; }
-        if (S.gate || !S.world || S.finishing) return;
+        if (S.gate || !S.world || S.finishing || frozenLeft() > 0) return;     // frozen players stay still
         try { S.world.lock(); } catch (e) { /* needs a click */ }
         setTimeout(function () { if (S.world && !S.world.locked && !U.stack.length && !S.gate && !g.S.over && !$('ov').innerHTML) showOverlay('pause'); }, 250);
       },
       onEnding: function () { sendProg(true); },
+      isRace: isRace, frozenLeft: frozenLeft, beforeAccuse: beforeAccuse, onAccused: onAccused,
+      placeHtml: function () { return '<div id="place-badge"></div>'; },
       onFinish: function () { finishCase(); }
     } });
     w.on('target', function (t) { U.setTarget(t); });
@@ -248,7 +256,9 @@
   }
   function tick() {
     var g = S.game, w = S.world; if (!g || !w) return; var U = UI();
-    if (!g.S.over && w.locked && !w.paused && !U.stack.length && !S.gate) g.tick(0.25);
+    var fz = frozenLeft();
+    if (!g.S.over && !S.gate && (fz > 0 || (w.locked && !w.paused && !U.stack.length))) g.tick(0.25);   // a freeze does NOT stop the case timer
+    drawFreeze(fz);
     U.updateHud(); w.setClock(g.clockMin());
     if (S.tickN % 4 === 3 && MF.Music && !S.gate && !g.S.over) {                       // once a second: switch music if needed
       var want = (U.isOpen('conclusion') || (w.locked && !w.paused)) ? wantMusic() : null;
@@ -291,9 +301,9 @@
     }
     // pause menu
     var st = S.st || {};
-    box.innerHTML = '<h2>⏸ ' + X('Paused', 'Dijeda') + '</h2><div class="menu-col"><button class="btn primary big" id="o-go">▶ ' + X('Continue', 'Teruskan') + '</button><button class="btn accent" id="o-nb">📓 ' + X('Notebook', 'Buku nota') + '</button><button class="btn ghost" id="o-set">⚙ ' + X('Settings', 'Tetapan') + '</button>' + ((st.mode === 'free' || PREVIEW) ? '<button class="btn ghost" id="o-exit">🚪 ' + X('Leave the case', 'Keluar dari kes') + '</button>' : '') + '</div>';
+    box.innerHTML = '<h2>⏸ ' + X('Paused', 'Dijeda') + '</h2><div class="menu-col"><button class="btn primary big" id="o-go">▶ ' + X('Continue', 'Teruskan') + '</button><button class="btn accent" id="o-nb">📓 ' + X('Notebook', 'Buku nota') + '</button><button class="btn ghost" id="o-set">⚙ ' + X('Settings', 'Tetapan') + '</button><button class="btn ghost" id="o-help">❓ ' + X('How to play', 'Cara bermain') + '</button>' + ((st.mode === 'free' || PREVIEW) ? '<button class="btn ghost" id="o-exit">🚪 ' + X('Leave the case', 'Keluar dari kes') + '</button>' : '') + '</div>';
     $('o-go').onclick = resume; $('o-nb').onclick = function () { ov.innerHTML = ''; S.world.setPaused(false); U.openNotebook(); };
-    $('o-set').onclick = function () { showSettings(box); }; if ($('o-exit')) $('o-exit').onclick = function () { if (confirmLeave()) finishCase(); };
+    $('o-set').onclick = function () { showSettings(box); }; $('o-help').onclick = function () { ov.innerHTML = ''; openHelp(); }; if ($('o-exit')) $('o-exit').onclick = function () { if (confirmLeave()) finishCase(); };
   }
   function confirmLeave() { return window.confirm(MF.tp({ en: 'Leave this case? Your progress is saved.', bm: 'Keluar dari kes ini? Kemajuan anda disimpan.' })); }
   function showSettings(box) {
@@ -324,12 +334,119 @@
   function ambientOff() { MF.Sfx.ambient(false); if (MF.Music) { S.musicMode = 'menu'; MF.Music.set('menu'); } }
   function setLow(on) { S.low = !!on; MF.store.set('mf.low', S.low); if (S.world) S.world.setLow(S.low); if (MF.UI.insp) MF.UI.insp.low = S.low; document.body.classList.toggle('lowfx', S.low); }
 
+
+  /* ==================================================================== RACE: the first to solve the case wins
+     Solo  : the first STUDENT who names the right culprit with enough proof wins. Others go on for 2nd, 3rd...
+     Teams : the first TEAM wins. A team accusation needs a YES vote from every team-mate who is online.
+     Wrong : a wrong (or badly proved) accusation freezes the player / whole team for 60 seconds.
+     Safety checks: a win is reported only once per game; the teacher page decides the places (no cheating
+     by two players claiming 1st); votes time out on the teacher page; the freeze is saved with the game. */
+  var FREEZE_SECS = 60;
+  function isRace() { var st = S.st || {}; return !PREVIEW && (st.mode === 'solo' || st.mode === 'teams'); }
+  function inTeam() { return !!(S.st && S.st.mode === 'teams' && S.team && S.team.members && S.team.members.length > 1); }
+  function myKey() { return (S.st && S.st.mode === 'teams' && S.team) ? 'T:' + S.team.name : 'S:' + S.sid; }
+  function frozenLeft() { var g = S.game; if (!g || !g.S.frozenUntil || g.S.over) return 0; return Math.max(0, Math.ceil((g.S.frozenUntil - Date.now()) / 1000)); }
+  function drawFreeze(left) {
+    var f = $('freeze'); if (!f) return;
+    if (left > 0 && !S.gate) {
+      if (S.world && !UI().stack.length && (S.world.locked || !S.world.paused)) { S.world.unlock(); S.world.setPaused(true); $('ov').innerHTML = ''; }
+      if (f.hidden) {
+        f.hidden = false;
+        f.innerHTML = '<div class="em">❄️</div><h1 class="logo" style="font-size:2.4em">' + X('FROZEN!', 'DIBEKUKAN!') + '</h1><div class="frz-n" id="frz-n"></div><p class="big-p">' + X('Wrong accusation. Use this time to think: which clue did you miss?', 'Tuduhan salah. Gunakan masa ini untuk berfikir: petunjuk mana yang anda terlepas?') + '</p><button class="btn accent" id="frz-nb">📓 ' + X('Read my notebook', 'Baca buku nota saya') + '</button>';
+        $('frz-nb').onclick = function () { if (!UI().stack.length) UI().openNotebook(); };
+      }
+      $('frz-n').textContent = left;
+    } else if (!f.hidden) { f.hidden = true; if (S.game && !S.game.S.over && !UI().stack.length) showOverlay('pause'); }
+  }
+  function onAccused(res) {
+    var g = S.game; if (!g || !isRace()) return;
+    var win = res.ending.stars >= 2 && res.r.ok.who;
+    if (win) { if (!g.S.raceSent) { g.S.raceSent = true; g.save(); send({ t: 'solved', sid: S.sid, name: S.name, stars: res.ending.stars, end: res.ending.id, secs: Math.round(g.S.play) }); } }
+    else { g.S.frozenUntil = Date.now() + FREEZE_SECS * 1000; g.save(); MF.Sfx.play('alarm'); }
+    sendProg(true);
+  }
+  /* ---- places ---- */
+  S.ranks = [];
+  function placeName(n) { return n === 1 ? X('1st', 'Pertama') : n === 2 ? X('2nd', 'Kedua') : n === 3 ? X('3rd', 'Ketiga') : n + X('th', '');  }
+  function onRank(list) {
+    var before = S.ranks.length; S.ranks = list; fillPlace();
+    if (list.length > before && S.game) {
+      var newest = list[list.length - 1], mine = newest.key === myKey();
+      if (!mine) { UI().toast((newest.place === 1 ? '🏆 ' : '🏁 ') + '<b>' + E(newest.label) + '</b> ' + X('solved the case — ', 'menyelesaikan kes — ') + placeName(newest.place) + '!' + (newest.place === 1 ? '<br>' + X('Keep going! 2nd and 3rd place are still open.', 'Teruskan! Tempat ke-2 dan ke-3 masih dibuka.') : ''), 'warn', 8000); MF.Sfx.play('page'); }
+    }
+  }
+  function fillPlace() {
+    var b = $('place-badge'); if (!b) return; var me = S.ranks.filter(function (r) { return r.key === myKey(); })[0];
+    b.innerHTML = me ? '<div class="place-badge p' + Math.min(me.place, 4) + '">' + (me.place === 1 ? '🏆 ' : me.place === 2 ? '🥈 ' : me.place === 3 ? '🥉 ' : '🏁 ') + placeName(me.place) + ' ' + X('place!', 'tempat!') + (me.place === 1 ? ' ' + X('You solved it FIRST!', 'Anda menyelesaikannya PERTAMA!') : '') + '</div>' : '';
+  }
+  /* ---- team vote ---- */
+  var vote = { wait: null, ask: null };
+  function closeVoteBoxes() { if (vote.wait) { vote.wait.close(); vote.wait = null; } if (vote.ask) { vote.ask.close(); vote.ask = null; } }
+  function nameOf(pid) { var g = S.game, p = g && g.C.people.filter(function (x) { return x.id === pid; })[0]; return p ? p.name : '?'; }
+  function beforeAccuse(A, m) {
+    if (!isRace() || !inTeam()) return false;
+    m.close(); closeVoteBoxes();
+    send({ t: 'propose', sid: S.sid, A: { who: A.who, what: A.what, when: A.when, where: A.where, picked: A.picked.slice() } });
+    var w = vote.wait = UI().modal({ cls: 'small vote', title: '🗳️ ' + X('Team vote', 'Undian pasukan'), noClose: true, sticky: true });
+    w.body.innerHTML = '<p class="big-p">' + X('You want to accuse', 'Anda mahu menuduh') + ' <b>' + E(nameOf(A.who)) + '</b>.<br>' + X('Waiting for your team-mates to vote…', 'Menunggu rakan sepasukan mengundi…') + '</p><p id="vote-n" class="tip"></p><div class="spinner"></div>';
+    w.foot.appendChild(UI().btn(X('Cancel', 'Batal'), 'ghost', function () { send({ t: 'voteCancel', sid: S.sid }); closeVoteBoxes(); }));
+    return true;
+  }
+  function onVoteWait(m) { var n = $('vote-n'); if (n) n.innerHTML = '✔ ' + m.yes + ' / ' + m.of + ' ' + X('voted YES', 'mengundi YA'); }
+  function onVote(m) {
+    if (!S.game || S.game.S.over) { send({ t: 'voteAns', sid: S.sid, id: m.id, yes: false, why: 'away' }); return; }
+    closeVoteBoxes(); var U = UI();
+    var a = vote.ask = U.modal({ cls: 'small vote', title: '🗳️ ' + X('Team vote', 'Undian pasukan'), noClose: true, sticky: true });
+    a.body.innerHTML = '<p class="big-p"><b>' + E(m.by) + '</b> ' + X('wants your team to accuse', 'mahu pasukan anda menuduh') + ' <b>' + E(nameOf(m.who)) + '</b>.</p><p>' + X('Do you agree? If the answer is wrong, the WHOLE team is frozen for 60 seconds.', 'Adakah anda setuju? Jika jawapan salah, SELURUH pasukan dibekukan selama 60 saat.') + '</p>';
+    var ans = function (yes) { send({ t: 'voteAns', sid: S.sid, id: m.id, yes: yes }); if (vote.ask) { vote.ask.close(); vote.ask = null; } if (yes) U.toast('🗳️ ' + X('You voted YES. Waiting for the others…', 'Anda mengundi YA. Menunggu yang lain…'), 'ev'); };
+    a.foot.appendChild(U.btn('👎 ' + X('No, not yet', 'Tidak, belum lagi'), 'ghost', function () { ans(false); }));
+    a.foot.appendChild(U.btn('👍 ' + X('Yes, accuse!', 'Ya, tuduh!'), 'danger', function () { ans(true); }));
+    MF.Sfx.play('page');
+  }
+  function onVoteEnd(m) {
+    closeVoteBoxes(); if (!S.game) return;
+    UI().toast('🗳️ ' + (m.why === 'timeout' ? X('The vote timed out. Talk to your team and try again.', 'Masa undian tamat. Berbincang dengan pasukan dan cuba lagi.') : m.why === 'cancel' ? X('The accusation was cancelled.', 'Tuduhan dibatalkan.') : '<b>' + E(m.by || '') + '</b> ' + X('voted NO. Talk to your team!', 'mengundi TIDAK. Berbincang dengan pasukan anda!')), 'warn', 7000);
+  }
+  function onTeamGo(m) {
+    var g = S.game; closeVoteBoxes(); if (!g || g.S.over || !m.A) return;
+    UI().closeAll(); var res = g.accuse(m.A); UI().afterAccuse(res);
+  }
+
+  /* ==================================================================== HOW TO PLAY (help) */
+  function helpHTML() {
+    var st = S.st || {}, teams = st.mode === 'teams', race = isRace() || !S.joined;
+    var li = function (ic, en, bm) { return '<li><span class="h-ic">' + ic + '</span><span>' + X(en, bm) + '</span></li>'; };
+    return '<div class="help">' +
+      '<section><h3>🎯 ' + X('Your mission', 'Misi anda') + '</h3><p>' + X('Find out WHO did it, HOW, WHEN — and PROVE it with evidence. Scary things happen, but every mystery has clues!', 'Cari SIAPA yang melakukannya, BAGAIMANA, BILA — dan BUKTIKAN dengan bukti. Perkara seram berlaku, tetapi setiap misteri ada petunjuk!') + '</p></section>' +
+      '<section><h3>🎮 ' + X('Controls', 'Kawalan') + '</h3><div class="statrow"><span><kbd>W A S D</kbd> ' + X('move', 'bergerak') + '</span><span><kbd>Mouse</kbd> ' + X('look', 'lihat') + '</span><span><kbd>E</kbd> ' + X('look / talk', 'periksa / bual') + '</span><span><kbd>Shift</kbd> ' + X('run', 'lari') + '</span><span><kbd>F</kbd> ' + X('flashlight', 'lampu suluh') + '</span><span><kbd>Tab</kbd> ' + X('notebook', 'buku nota') + '</span><span><kbd>H</kbd> ' + X('help', 'bantuan') + '</span><span><kbd>Esc</kbd> ' + X('pause', 'jeda') + '</span></div></section>' +
+      '<section><h3>🔎 ' + X('How to solve it', 'Cara menyelesaikannya') + '</h3><ol class="h-steps">' +
+        li('👀', 'Explore every room. Press <b>E</b> on things that glow to collect evidence.', 'Terokai setiap bilik. Tekan <b>E</b> pada benda yang bercahaya untuk mengumpul bukti.') +
+        li('💬', 'Talk to everyone. Ask questions, then <b>show evidence</b> — some people are lying!', 'Bercakap dengan semua orang. Tanya soalan, kemudian <b>tunjuk bukti</b> — ada yang berbohong!') +
+        li('📓', 'Open your notebook (<b>Tab</b>). <b>Compare</b> two clues to catch a lie. Solve the puzzles to unlock secrets.', 'Buka buku nota (<b>Tab</b>). <b>Bandingkan</b> dua petunjuk untuk menangkap pembohongan. Selesaikan teka-teki untuk membuka rahsia.') +
+        li('🧩', 'On the deduction board, answer the questions and link the evidence that proves each answer.', 'Di papan deduksi, jawab soalan dan pautkan bukti yang membuktikan setiap jawapan.') +
+        li('🕵️', 'When you are sure, press <b>Name the culprit</b>. Choose who, what, when, where — and your BEST proof.', 'Apabila pasti, tekan <b>Namakan pelaku</b>. Pilih siapa, apa, bila, di mana — dan bukti TERBAIK anda.') +
+      '</ol></section>' +
+      '<section class="h-win"><h3>🏆 ' + X('How to WIN', 'Cara MENANG') + '</h3><ul class="h-steps">' +
+        (teams ? li('🤝', 'Teams: clues you find are shared with your team automatically.', 'Pasukan: petunjuk yang anda jumpa dikongsi dengan pasukan secara automatik.') + li('🗳️', 'Teams: to accuse, EVERY team-mate must vote <b>YES</b>. Talk together first!', 'Pasukan: untuk menuduh, SETIAP ahli mesti mengundi <b>YA</b>. Berbincang dahulu!') + li('🥇', 'The FIRST team to name the right culprit with enough proof WINS.', 'Pasukan PERTAMA yang menamakan pelaku yang betul dengan bukti yang cukup MENANG.')
+               : li('🥇', 'The FIRST player to name the right culprit with enough proof WINS.', 'Pemain PERTAMA yang menamakan pelaku yang betul dengan bukti yang cukup MENANG.')) +
+        li('🥈', 'After the winner, everyone else keeps playing for 2nd and 3rd place until the time runs out.', 'Selepas pemenang, yang lain terus bermain untuk tempat ke-2 dan ke-3 sehingga masa tamat.') +
+        li('❄️', 'A WRONG accusation freezes you' + (teams ? ' (and your whole team)' : '') + ' for 60 seconds. Then you can try again.', 'Tuduhan SALAH membekukan anda' + (teams ? ' (dan seluruh pasukan)' : '') + ' selama 60 saat. Kemudian anda boleh cuba lagi.') +
+        li('⏳', 'Watch the timer at the top. When it ends, you must accuse.', 'Perhatikan pemasa di atas. Apabila tamat, anda mesti menuduh.') +
+      '</ul>' + (race ? '' : '') + '</section>' +
+      '<section><h3>💡 ' + X('Stuck?', 'Tersekat?') + '</h3><p>' + X('Hint tokens (💡) give hints on the deduction board. Answer bonus questions to earn more. Scary moments are just part of the story — you can turn them down in Settings (Esc → Settings).', 'Token petunjuk (💡) memberi petunjuk di papan deduksi. Jawab soalan bonus untuk mendapat lebih. Detik seram hanyalah sebahagian cerita — anda boleh merendahkannya di Tetapan (Esc → Tetapan).') + '</p></section></div>';
+  }
+  function openHelp() {
+    if (S.screen === 'game' && S.game && UI().modal) { var m = UI().modal({ cls: 'help-m', title: X('How to play', 'Cara bermain'), icon: '❓' }); m.body.innerHTML = helpHTML(); m.foot.appendChild(UI().btn(X('Got it!', 'Faham!') + ' ✔', 'primary', function () { m.close(); })); return; }
+    var hb = $('helpbox'); hb.hidden = false; hb.innerHTML = '<div class="modal help-m"><div class="mhead"><div class="mtitle"><span class="mic">❓</span><span>' + X('How to play', 'Cara bermain') + '</span></div><button class="mclose" id="hb-x">✕</button></div><div class="mbody">' + helpHTML() + '</div><div class="mfoot"><button class="btn primary" id="hb-ok">' + X('Got it!', 'Faham!') + ' ✔</button></div></div>';
+    $('hb-x').onclick = $('hb-ok').onclick = function () { hb.hidden = true; hb.innerHTML = ''; };
+  }
+
   /* ------------------------------------------------------------------ leaving a case */
   function endGame(silent) {
     clearInterval(S.tickT); S.tickT = null; saveNow(); UI().closeAll();
     if (S.world) { try { S.world.dispose(); } catch (e) { /* ignore */ } S.world = null; }
     if (MF.UI.insp) { try { MF.UI.insp.dispose(); } catch (e) { /* ignore */ } MF.UI.insp = null; MF.UI._inspCanvas = null; }
-    ambientOff(); S.game = null; $('ov').innerHTML = '';
+    ambientOff(); S.game = null; $('ov').innerHTML = ''; $('freeze').hidden = true;
   }
   function finishCase() {
     S.finishing = true; sendProg(true); endGame(); S.finishing = false; var st = S.st || {};
@@ -340,6 +457,11 @@
 
   window.addEventListener('beforeunload', function () { saveNow(); if (S.link) { try { send({ t: 'bye', sid: S.sid }); } catch (e) { /* ignore */ } } });
   window.addEventListener('keydown', function (e) { if (e.code === 'Tab' && S.screen === 'game') e.preventDefault(); }, true);
+  window.addEventListener('keydown', function (e) {                          // H = How to play (during the game)
+    var a = document.activeElement; if (e.code !== 'KeyH' || (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) return;
+    if (S.screen === 'game' && S.game && !S.gate && !UI().isOpen('help')) openHelp();
+  });
+  $('helpbtn').onclick = function () { MF.Sfx.init(); openHelp(); };
 
   /* ------------------------------------------------------------------ start */
   if (PREVIEW) {

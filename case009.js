@@ -385,10 +385,12 @@
     ],
 
     /* ------------------------------------------------------------------ FINAL CONCLUSION */
+    timeUp: { title: T('Cake time!', 'Masa kek!'), text: T('Atuk is calling everyone to cut the cake. It is time to name the culprit!', 'Atuk memanggil semua orang untuk memotong kek. Sudah tiba masanya menamakan pelaku!') },
     conclusion: {
       who: { correct: 'aiman' },
       what: { questionId: 'q_how' },
       when: { questionId: 'q_when' },
+      whereQ: T('WHERE is the watch now?', 'DI MANA jam itu sekarang?'),
       where: [
         { id: 'bedroom', text: T("In Aiman's bedroom (toy robot)", 'Di bilik Aiman (robot mainan)'), correct: true },
         { id: 'garden', text: T('In the garden', 'Di taman') }, { id: 'kitchen', text: T('In the kitchen', 'Di dapur') }, { id: 'unknown', text: T('I do not know yet', 'Saya belum tahu') }

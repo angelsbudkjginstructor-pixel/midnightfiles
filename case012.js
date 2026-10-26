@@ -342,10 +342,12 @@
         hints: [T('Read the contract: when does Rourke get paid?', 'Baca kontrak: bila Rourke dibayar?')] }
     ],
 
+    timeUp: { title: T('The ship is coming!', 'Kapal sedang datang!'), text: T('The Mary Aoife II turns toward the rocks. There is no more time. Name the culprit NOW!', 'Mary Aoife II membelok ke arah batu. Tiada masa lagi. Namakan pelaku SEKARANG!') },
     conclusion: {
       who: { correct: 'rourke' },
       what: { questionId: 'q_how' },
       when: { questionId: 'q_when' },
+      whereQ: T('WHERE is the missing fuse now?', 'DI MANA fius yang hilang sekarang?'),
       where: [
         { id: 'chest', text: T("In Rourke's locked sea chest in the boathouse", 'Dalam peti laut Rourke yang berkunci di rumah bot'), correct: true },
         { id: 'sea', text: T('Thrown into the sea', 'Dibuang ke laut') }, { id: 'cottage', text: T("In the keeper's cottage", 'Dalam kotej penjaga') },

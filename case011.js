@@ -368,10 +368,12 @@
         hints: [T('Three of these are TRUE. Check each against the logs.', 'Tiga daripadanya BENAR. Semak setiap satu dengan log.'), T('Was the generator switched on by hand?', 'Adakah penjana dihidupkan dengan tangan?')] }
     ],
 
+    timeUp: { title: T('The police boat is here!', 'Bot polis sudah tiba!'), text: T('Blue lights flash across the loch. The inspector wants a name. Who took the pearls?', 'Lampu biru berkelip di seberang tasik. Inspektor mahukan nama. Siapa mengambil mutiara itu?') },
     conclusion: {
       who: { correct: 'leo' },
       what: { questionId: 'q_how' },
       when: { questionId: 'q_when' },
+      whereQ: T('WHERE are the pearls now?', 'DI MANA mutiara itu sekarang?'),
       where: [
         { id: 'trolley', text: T('Hidden in the lining of the luggage trolley in the lobby', 'Tersembunyi dalam pelapik troli bagasi di lobi'), correct: true },
         { id: 'oven', text: T('In the kitchen oven', 'Dalam ketuhar dapur') }, { id: 'wardrobe', text: T('In the wardrobe of Room 13', 'Dalam almari Bilik 13') },

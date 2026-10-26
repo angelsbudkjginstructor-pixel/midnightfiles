@@ -56,7 +56,7 @@
   };
   UI.updateKeys = function () {
     var k = document.getElementById('h-keys'); if (!k) return;
-    k.innerHTML = '<b>WASD</b> ' + X('move', 'bergerak') + ' · <b>E</b> ' + X('look / talk', 'periksa / bual') + ' · <b>Shift</b> ' + X('run', 'lari') + ' · <b>Ctrl/C</b> ' + X('crouch', 'tunduk') + ' · <b>F</b> ' + X('flashlight', 'lampu suluh') + ' · <b>Tab</b> ' + X('notebook', 'buku nota') + ' · <b>Esc</b> ' + X('pause', 'jeda');
+    k.innerHTML = '<b>WASD</b> ' + X('move', 'bergerak') + ' · <b>E</b> ' + X('look / talk', 'periksa / bual') + ' · <b>Shift</b> ' + X('run', 'lari') + ' · <b>Ctrl/C</b> ' + X('crouch', 'tunduk') + ' · <b>F</b> ' + X('flashlight', 'lampu suluh') + ' · <b>Tab</b> ' + X('notebook', 'buku nota') + ' · <b>H</b> ' + X('help', 'bantuan') + ' · <b>Esc</b> ' + X('pause', 'jeda');
   };
   UI.setTarget = function (t) {
     var l = document.getElementById('h-label'), a = document.getElementById('h-aim'); if (!l) return;

@@ -253,8 +253,9 @@
 
   /* ====================================================================== TIME UP */
   UI.openTimeUp = function () {
-    var g = UI.g, m = UI.modal({ cls: 'small timeup', title: '⏰ ' + X('Cake time!', 'Masa kek!'), noClose: true });
-    m.body.innerHTML = '<p class="big-p">' + X('Atuk is calling everyone to cut the cake. It is time to name the culprit!', 'Atuk memanggil semua orang untuk memotong kek. Sudah tiba masanya menamakan pelaku!') + '</p>';
+    // each case may give its own time-up story (C.timeUp = {title, text}); otherwise a general message
+    var g = UI.g, tu = g.C.timeUp || {}, m = UI.modal({ cls: 'small timeup', title: '⏰ ' + (tu.title ? MF.t(tu.title) : X('Time is up!', 'Masa tamat!')), noClose: true });
+    m.body.innerHTML = '<p class="big-p">' + (tu.text ? MF.t(tu.text) : X('There is no more time. It is time to name the culprit!', 'Tiada masa lagi. Sudah tiba masanya menamakan pelaku!')) + '</p>';
     m.foot.appendChild(UI.btn('🕵️ ' + X('Accuse now', 'Tuduh sekarang'), 'danger', function () { m.close(); UI.openConclusion(); }));
     if (g.S.ext < 1) m.foot.appendChild(UI.btn('⏱ ' + X('5 more minutes (once)', '5 minit lagi (sekali)'), 'ghost', function () { g.extend(); m.close(); UI.toast('⏱ +5 ' + X('minutes', 'minit'), 'ev'); }));
     MF.Sfx.play('alarm');
@@ -262,6 +263,7 @@
 
   /* ====================================================================== FINAL ACCUSATION */
   UI.openConclusion = function () {
+    if (UI.hooks.frozenLeft && UI.hooks.frozenLeft() > 0) { UI.toast('❄️ ' + X('You are frozen for a wrong accusation. Wait ' + UI.hooks.frozenLeft() + ' s.', 'Anda dibekukan kerana tuduhan salah. Tunggu ' + UI.hooks.frozenLeft() + ' saat.'), 'warn', 4000); return; }
     var g = UI.g, C = g.C, cc = C.conclusion, step = 0, A = { who: null, what: null, when: null, where: null, picked: [] };
     var qWhat = g.question(cc.what.questionId), qWhen = g.question(cc.when.questionId);
     [['what', qWhat], ['when', qWhen]].forEach(function (a) { var st = g.q(a[1].id); if (st.solved) A[a[0]] = st.choice; });
@@ -288,7 +290,7 @@
         var q = key === 'what' ? qWhat : qWhen; box.innerHTML = '<h3>' + (key === 'what' ? '2. ' + X('WHAT happened?', 'APA yang berlaku?') : '3. ' + X('WHEN did it happen?', 'BILA ia berlaku?')) + '</h3>'; var l = el('div', 'db-opts');
         q.options.forEach(function (o) { var b = el('button', 'db-opt' + (A[key] === o.id ? ' on' : ''), '<i>' + (A[key] === o.id ? '◉' : '○') + '</i> ' + MF.t(o.text)); b.onclick = function () { A[key] = o.id; MF.Sfx.play('click'); draw(); }; l.appendChild(b); }); box.appendChild(l);
       } else if (key === 'where') {
-        box.innerHTML = '<h3>4. ' + X('WHERE is the watch now?', 'DI MANA jam itu sekarang?') + '</h3>'; var l2 = el('div', 'db-opts');
+        box.innerHTML = '<h3>4. ' + (cc.whereQ ? MF.t(cc.whereQ) : X('WHERE is the missing thing now?', 'DI MANA benda yang hilang itu sekarang?')) + '</h3>'; var l2 = el('div', 'db-opts');
         cc.where.forEach(function (o) { var b = el('button', 'db-opt' + (A.where === o.id ? ' on' : ''), '<i>' + (A.where === o.id ? '◉' : '○') + '</i> ' + MF.t(o.text)); b.onclick = function () { A.where = o.id; MF.Sfx.play('click'); draw(); }; l2.appendChild(b); }); box.appendChild(l2);
       } else if (key === 'proof') {
         box.innerHTML = '<h3>5. ' + X('What is your PROOF?', 'Apakah BUKTI anda?') + ' <small>(' + A.picked.length + '/' + cc.maxEvidence + ')</small></h3><p class="tip">' + X('Pick the BEST evidence. A good proof shows who, what, when — and why the others are innocent.', 'Pilih bukti TERBAIK. Bukti yang baik menunjukkan siapa, apa, bila — dan kenapa orang lain tidak bersalah.') + '</p>';
@@ -303,6 +305,8 @@
       nav();
     }
     function accuse() {
+      // Teams race: the accusation first goes to a team vote (the hook returns true when it takes over)
+      if (UI.hooks.beforeAccuse && UI.hooks.beforeAccuse(A, m)) return;
       var res = g.accuse(A); m.close(); UI.afterAccuse(res);
     }
     draw(); return m;
@@ -311,6 +315,7 @@
   /* what happens after the accusation */
   UI.afterAccuse = function (res) {
     var g = UI.g, e = res.ending;
+    if (UI.hooks.onAccused) UI.hooks.onAccused(res);                 // race: tell the teacher (win) or start the 60 s freeze (wrong)
     if (e.stars >= 2) { MF.Sfx.play('win'); return UI.showEnding(res); }
     // wrong or weak: give a chance to keep investigating (no spoilers about the right person)
     MF.Sfx.play('sad');
@@ -318,7 +323,9 @@
     var extra = (e.id === 'wrong' && g.C.wrongWho && g.C.wrongWho[res.ans.who]) ? '<div class="cmp-result bad"><b>💭 ' + X('Why this person is innocent', 'Kenapa orang ini tidak bersalah') + '</b><br>' + MF.t(g.C.wrongWho[res.ans.who]) + '</div>' : '';
     m.body.innerHTML = '<p class="big-p">' + MF.t(e.text) + '</p>' + extra;
     m.foot.appendChild(UI.btn('🔎 ' + X('Keep investigating', 'Teruskan menyiasat'), 'primary', function () { m.close(); }));
-    m.foot.appendChild(UI.btn(X('Show me the solution', 'Tunjukkan penyelesaian'), 'ghost', function () { g.giveUp(res); m.close(); UI.showEnding(res); }));
+    var race = UI.hooks.isRace && UI.hooks.isRace();
+    if (race) m.body.insertAdjacentHTML('beforeend', '<div class="cmp-result bad"><b>❄️ ' + X('Wrong accusation! You are frozen for 60 seconds.', 'Tuduhan salah! Anda dibekukan selama 60 saat.') + '</b><br>' + X('Then check your evidence again and try once more.', 'Kemudian semak bukti anda semula dan cuba sekali lagi.') + '</div>');
+    else m.foot.appendChild(UI.btn(X('Show me the solution', 'Tunjukkan penyelesaian'), 'ghost', function () { g.giveUp(res); m.close(); UI.showEnding(res); }));   // no spoilers during a race
   };
 
   /* ====================================================================== ENDING + DEBRIEF */
@@ -326,7 +333,7 @@
     var g = UI.g, C = g.C, e = res.ending, culprit = person(C.conclusion.who.correct);
     var m = UI.modal({ cls: 'ending', title: MF.t(e.title), icon: '🏁', noClose: true, sticky: true });
     var stars = ''; for (var i = 0; i < 4; i++) stars += '<i class="' + (i < e.stars ? 'on' : '') + '">★</i>';
-    var b = m.body; b.innerHTML = '<div class="stars">' + stars + '</div><p class="big-p end-text">' + MF.t(e.text) + '</p>';
+    var b = m.body; b.innerHTML = (UI.hooks.placeHtml ? UI.hooks.placeHtml() : '') + '<div class="stars">' + stars + '</div><p class="big-p end-text">' + MF.t(e.text) + '</p>';
     var sec = function (title, html, cls) { b.insertAdjacentHTML('beforeend', '<section class="debrief ' + (cls || '') + '"><h3>' + title + '</h3>' + html + '</section>'); };
     sec('📖 ' + X('What REALLY happened', 'Apa yang SEBENARNYA berlaku'), '<p>' + MF.t(C.hidden.summary) + '</p><ol class="seq">' + C.hidden.sequence.map(function (s) { return '<li><b>' + MF.fmtTime(s[0]) + '</b> ' + MF.t(s[1]) + '</li>'; }).join('') + '</ol>');
     sec('📎 ' + X('Your proof', 'Bukti anda'), '<ul class="proof">' + res.groups.map(function (gr) { return '<li class="' + (gr.got ? 'got' : 'miss') + '">' + (gr.got ? '✔ ' : '✖ ') + MF.t(gr.label) + '</li>'; }).join('') + '</ul><p class="tip">' + X('Green = you used it as proof. Red = it was available, but you did not use it.', 'Hijau = anda guna sebagai bukti. Merah = ada tersedia, tetapi anda tidak menggunakannya.') + '</p>');

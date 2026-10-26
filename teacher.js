@@ -19,7 +19,7 @@
 
   MF.store.set('mf.teacherKey', 'k' + Date.now());                               // lets THIS browser use the student preview link
   var cfg = Object.assign({ mode: 'solo', case: '009', cases: ['009'], diff: 'standard', scare: null, subjects: SUBJ.map(function (s) { return s[0]; }), grade: 'all', timer: null, lang: 'en', sheet: '' }, MF.store.get(KEY, {}));
-  var T = { code: MF.store.get('mf.t.code') || MF.makeCode(), hub: null, phase: 'lobby', rev: 1, students: {}, byConn: {}, bank: [], bankMsg: '', ready: false, err: '' };
+  var T = { ranks: [], votes: {}, voteN: 0, raceCase: null, code: MF.store.get('mf.t.code') || MF.makeCode(), hub: null, phase: 'lobby', rev: 1, students: {}, byConn: {}, bank: [], bankMsg: '', ready: false, err: '' };
 
   /* ------------------------------------------------------------------ page */
   $('app').innerHTML =
@@ -43,6 +43,7 @@
     '<input id="c-sheet" class="inp" style="font-size:.9em" placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?output=csv"><div class="t-ctrl"><button class="btn accent small" id="b-sheet">⬇ ' + X('Load', 'Muat') + '</button><button class="btn ghost small" id="b-tpl">📄 ' + X('Sample sheet', 'Contoh sheet') + '</button></div><div id="t-sheet" class="tip"></div></div>' +
     '<div class="t-card"><h2>📣 ' + X('Message to students', 'Mesej kepada murid') + '</h2><input id="c-msg" class="inp" style="font-size:.95em" maxlength="140" placeholder="Example: 5 minutes left!"><div class="t-ctrl"><button class="btn accent small" id="b-msg">📤 ' + X('Send', 'Hantar') + '</button></div></div>' +
     '</div><div>' +
+    '<div class="t-card"><h2>🏆 ' + X('Race results', 'Keputusan perlumbaan') + '</h2><p class="tip">' + X('Solo: the first student to solve wins. Teams: the first team wins (the whole team must vote YES). A wrong accusation freezes the player / team for 60 s.', 'Solo: murid pertama yang menyelesaikan menang. Pasukan: pasukan pertama menang (seluruh pasukan mesti undi YA). Tuduhan salah membekukan pemain / pasukan 60 saat.') + '</p><ol class="t-podium" id="t-podium"></ol><div class="t-ctrl"><button class="btn ghost small" id="b-race">🏁 ' + X('New race (clear results)', 'Perlumbaan baru (kosongkan)') + '</button></div></div>' +
     '<div class="t-card"><h2>👥 ' + X('Students', 'Murid') + ' <span id="t-count" class="pill"></span></h2>' +
     '<div class="t-ctrl"><select id="c-tsize" class="t-sel narrow"><option value="2">Teams of 2</option><option value="3">Teams of 3</option><option value="4">Teams of 4</option></select><button class="btn ghost small" id="b-teams">🤝 ' + X('Make teams', 'Bentuk pasukan') + '</button><button class="btn ghost small" id="b-noteams">✖ ' + X('Clear teams', 'Kosongkan') + '</button><button class="btn ghost small" id="b-csv">⬇ CSV</button></div>' +
     '<div class="t-scroll"><table class="t-table"><thead><tr><th>' + 'Name</th><th>Team</th><th>Now</th><th>📋</th><th>🧩</th><th>💡</th><th>⏱</th><th>Result</th><th>📝</th><th></th></tr></thead><tbody id="t-rows"></tbody></table></div><p class="tip">📋 evidence · 🧩 deduction questions solved · 💡 hints used · ⏱ minutes · 📝 exit ticket</p></div>' +
@@ -70,7 +71,7 @@
   function stateObj() {
     return { phase: T.phase, mode: cfg.mode, case: cfg.case, cases: cfg.cases.length ? cfg.cases : [cfg.case], diff: cfg.diff, scare: cfg.scare, subjects: cfg.subjects, grade: cfg.grade, timer: cfg.timer, lang: cfg.lang, bank: T.bank };
   }
-  function pushState() { T.rev++; if (T.hub) T.hub.broadcast({ t: 'state', rev: T.rev, s: stateObj() }); draw(); }
+  function pushState() { if (T.raceCase !== cfg.mode + ':' + cfg.case) clearRace(); T.rev++; if (T.hub) T.hub.broadcast({ t: 'state', rev: T.rev, s: stateObj() }); draw(); }
 
   /* ------------------------------------------------------------------ network */
   function startHub() {
@@ -90,13 +91,17 @@
     var s;
     if (m.t === 'hello') {
       s = T.students[m.sid] || (T.students[m.sid] = { sid: m.sid, name: m.name, team: null, prog: {} }); s.name = String(m.name || '?').slice(0, 20); s.conn = id; s.last = Date.now(); s.off = false; T.byConn[id] = m.sid;
-      T.hub.send(id, { t: 'state', rev: T.rev, s: stateObj() }); if (s.team) sendTeam(s); draw(); return;
+      T.hub.send(id, { t: 'state', rev: T.rev, s: stateObj() }); if (s.team) sendTeam(s); T.hub.send(id, { t: 'rank', ranks: rankList() }); draw(); return;
     }
     s = T.students[m.sid] || T.students[T.byConn[id]]; if (!s) return;
     s.conn = id; s.last = Date.now(); s.off = false;
     if (m.t === 'need') T.hub.send(id, { t: 'state', rev: T.rev, s: stateObj() });
     else if (m.t === 'prog') { s.prog = m; draw(); }
     else if (m.t === 'bye') { s.off = true; draw(); }
+    else if (m.t === 'solved') onSolved(s, m);
+    else if (m.t === 'propose') onPropose(s, m);
+    else if (m.t === 'voteAns') onVoteAns(s, m);
+    else if (m.t === 'voteCancel') { var v = s.team && T.votes[s.team]; if (v && v.by === s.sid) endVote(s.team, { why: 'cancel' }); }
     else if (m.t === 'share' && s.team) Object.keys(T.students).forEach(function (k) { var o = T.students[k]; if (o !== s && o.team === s.team && !o.off && o.conn) T.hub.send(o.conn, { t: 'share', from: s.name, kind: m.kind, id: m.id }); });
   }
   function sendTeam(s) { if (!T.hub || !s.conn) return; var mem = Object.keys(T.students).map(function (k) { return T.students[k]; }).filter(function (o) { return s.team && o.team === s.team; }).map(function (o) { return o.name; }); T.hub.send(s.conn, { t: 'team', team: s.team, members: mem }); }
@@ -107,6 +112,49 @@
   try { var w = new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(1)},2000)'], { type: 'text/javascript' }))); w.onmessage = beat; }
   catch (e) { setInterval(beat, 2000); }
   setInterval(draw, 2500);
+
+
+  /* ------------------------------------------------------------------ RACE: the teacher page decides the places
+     Safety checks: each student / team can only get ONE place; places are cleared when the case or mode changes
+     or when the teacher presses "New race"; a team vote ends after 45 s if somebody does not answer. */
+  function online(s) { return s && !s.off && s.conn && Date.now() - (s.last || 0) < 20000; }
+  function teamMates(team) { return Object.keys(T.students).map(function (k) { return T.students[k]; }).filter(function (o) { return team && o.team === team && online(o); }); }
+  function rankList() { return T.ranks.map(function (r, i) { return { key: r.key, label: r.label, place: i + 1, stars: r.stars }; }); }
+  function sendRanks() { if (T.hub) T.hub.broadcast({ t: 'rank', ranks: rankList() }); drawPodium(); }
+  function onSolved(s, m) {
+    if (cfg.mode !== 'solo' && cfg.mode !== 'teams') return;
+    var team = cfg.mode === 'teams' && s.team, key = team ? 'T:' + s.team : 'S:' + s.sid;
+    if (T.ranks.some(function (r) { return r.key === key; })) return;                       // already has a place
+    T.ranks.push({ key: key, label: team ? s.team + ' (' + teamMates(s.team).map(function (o) { return o.name; }).join(', ') + ')' : s.name, stars: m.stars, at: Date.now(), mins: Math.round((m.secs || 0) / 60) });
+    sendRanks();
+  }
+  function onPropose(s, m) {
+    if (!s.team || !m.A) return;
+    if (T.votes[s.team]) endVote(s.team, { why: 'cancel' });
+    var mates = teamMates(s.team), others = mates.filter(function (o) { return o !== s; });
+    if (!others.length) { T.hub.send(s.conn, { t: 'teamGo', A: m.A }); return; }            // nobody else online: no vote needed
+    var v = T.votes[s.team] = { id: ++T.voteN, by: s.sid, A: m.A, yes: {}, need: mates.map(function (o) { return o.sid; }) };
+    v.yes[s.sid] = true;
+    others.forEach(function (o) { T.hub.send(o.conn, { t: 'vote', id: v.id, by: s.name, who: m.A.who }); });
+    T.hub.send(s.conn, { t: 'voteWait', id: v.id, yes: 1, of: v.need.length });
+    v.timer = setTimeout(function () { if (T.votes[s.team] === v) endVote(s.team, { why: 'timeout' }); }, 45000);
+  }
+  function onVoteAns(s, m) {
+    var v = s.team && T.votes[s.team]; if (!v || v.id !== m.id) return;
+    if (!m.yes) { endVote(s.team, { why: 'no', by: s.name }); return; }
+    v.yes[s.sid] = true; var n = v.need.filter(function (sid) { return v.yes[sid]; }).length;
+    if (n >= v.need.length) { var A = v.A; clearTimeout(v.timer); delete T.votes[s.team]; teamMates(s.team).forEach(function (o) { T.hub.send(o.conn, { t: 'teamGo', A: A }); }); return; }
+    var by = T.students[v.by]; if (online(by)) T.hub.send(by.conn, { t: 'voteWait', id: v.id, yes: n, of: v.need.length });
+  }
+  function endVote(team, info) {
+    var v = T.votes[team]; if (!v) return; clearTimeout(v.timer); delete T.votes[team];
+    teamMates(team).forEach(function (o) { T.hub.send(o.conn, { t: 'voteEnd', why: info.why, by: info.by || '' }); });
+  }
+  function drawPodium() {
+    var el = $('t-podium'); if (!el) return; var medal = ['🥇', '🥈', '🥉'];
+    el.innerHTML = T.ranks.length ? T.ranks.map(function (r, i) { return '<li class="p' + (i + 1) + '">' + (medal[i] || '🏁 ' + (i + 1) + '.') + ' ' + E(r.label) + ' <span class="tip">· ' + '★'.repeat(r.stars || 0) + ' · ' + r.mins + ' min</span></li>'; }).join('') : '<li class="tip">' + X('Nobody has solved the case yet.', 'Belum ada yang menyelesaikan kes.') + '</li>';
+  }
+  function clearRace() { T.ranks = []; Object.keys(T.votes).forEach(function (t) { endVote(t, { why: 'cancel' }); }); T.raceCase = cfg.mode + ':' + cfg.case; sendRanks(); }
 
   /* ------------------------------------------------------------------ drawing */
   function drawNet() {
@@ -146,6 +194,7 @@
     };
     $('b-noteams').onclick = function () { Object.keys(T.students).forEach(function (k) { T.students[k].team = null; }); sendAllTeams(); draw(); };
     $('b-csv').onclick = exportCSV;
+    $('b-race').onclick = function () { if (!T.ranks.length || window.confirm('Clear the race results?')) clearRace(); };
     $('b-sheet').onclick = function () { readControls(); loadSheet(); };
     $('b-tpl').onclick = function () {
       download('midnight-files-questions-sample.csv', 'subject,grade,question_en,question_bm,a,b,c,d,answer,hint\nmath,3,"What is 6 + 7?","Berapakah 6 + 7?",11,12,13,14,C,"Count up from 6"\nscience,4,"Which is a living thing?","Yang mana benda hidup?",rock,tree,chair,water,B,"Living things grow"\n');
@@ -153,9 +202,10 @@
   }
   function copy(t) { try { navigator.clipboard.writeText(t); } catch (e) { /* ignore */ } }
   function download(name, text) { var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + text], { type: 'text/csv' })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
+  function placeOf(s) { var key = cfg.mode === 'teams' && s.team ? 'T:' + s.team : 'S:' + s.sid, i = -1; T.ranks.forEach(function (r, k) { if (r.key === key) i = k; }); return i >= 0 ? i + 1 : ''; }
   function exportCSV() {
-    var rows = [['Name', 'Team', 'Case', 'Evidence', 'Questions solved', 'Hints used', 'Minutes', 'Ending', 'Stars', 'Exit ticket (of 3)', 'Accusations']];
-    Object.keys(T.students).forEach(function (k) { var s = T.students[k], p = s.prog || {}; rows.push([s.name, s.team || '', p.case || '', p.ev == null ? '' : p.ev, p.qs == null ? '' : p.qs, p.hints == null ? '' : p.hints, p.mins == null ? '' : p.mins, p.end || '', p.stars == null ? '' : p.stars, p.ex == null ? '' : p.ex, p.acc == null ? '' : p.acc]); });
+    var rows = [['Name', 'Team', 'Case', 'Evidence', 'Questions solved', 'Hints used', 'Minutes', 'Ending', 'Stars', 'Exit ticket (of 3)', 'Accusations', 'Place']];
+    Object.keys(T.students).forEach(function (k) { var s = T.students[k], p = s.prog || {}; rows.push([s.name, s.team || '', p.case || '', p.ev == null ? '' : p.ev, p.qs == null ? '' : p.qs, p.hints == null ? '' : p.hints, p.mins == null ? '' : p.mins, p.end || '', p.stars == null ? '' : p.stars, p.ex == null ? '' : p.ex, p.acc == null ? '' : p.acc, placeOf(s)]); });
     download('midnight-files-' + new Date().toISOString().slice(0, 10) + '.csv', rows.map(function (r) { return r.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(','); }).join('\n'));
   }
 
@@ -175,6 +225,6 @@
   }
 
   window.addEventListener('beforeunload', function () { if (T.hub) { try { T.hub.close(); } catch (e) { /* ignore */ } } });
-  fillControls(); bind(); drawNet(); startHub(); draw(); if (cfg.sheet) loadSheet();
+  fillControls(); bind(); drawNet(); startHub(); T.raceCase = cfg.mode + ':' + cfg.case; draw(); drawPodium(); if (cfg.sheet) loadSheet();
   window.MF_teacher = T;                                                         // handy for tests
 })();

@@ -3,7 +3,11 @@
 A first-person 3D detective game for Chrome. Students play **only while the teacher page is open**.
 Permainan detektif 3D untuk Chrome. Murid hanya boleh bermain **semasa halaman cikgu dibuka**.
 
-Ready to play: 009 "The Birthday Party Mystery" (easy, with a twist) and three scary thriller cases (010 "The Last Bell" abandoned school, 011 "Room 13, Hotel Belladonna", 012 "The Lighthouse at Skerry Point" with a real ghost twist). The scary cases use scare level Low/Medium chosen by the teacher; blood appears only as clues, never as gore. Cases 001–008 show "Coming soon".
+Ready to play: seven cases. Scary thriller cases with a plot twist: 001 "The Missing Lunchbox", 002 "The Lights Go Out", 003 "The Painted Wall", 010 "The Last Bell", 011 "Room 13, Hotel Belladonna" and 012 "The Lighthouse at Skerry Point" (real ghost twist). Also 009 "The Birthday Party Mystery" (easy, not scary). The teacher chooses the Scare level (Off / Low / Medium); blood appears only as clues, never as gore. Cases 004–008 show "Coming soon".
+
+Race to win (Solo and Teams modes): the first student (Solo) or first team (Teams) to accuse the right culprit with enough proof wins. Everyone else keeps playing for 2nd, 3rd... until the timer ends. A wrong accusation freezes that student (or the whole team) for 60 seconds. In Teams mode an accusation only goes in when every online team-mate votes YES. Places appear live in "Race results" on the teacher page and in the CSV ("New race" clears them; changing case or mode clears them too).
+
+Help: students press the "How to play" button (menus), the H key or Esc → How to play (in the game).
 
 Music: three small mp3 files (mus-intro, mus-explore, mus-tense) are loaded only when needed. Intro plays on menus and briefing, the waltz while exploring, and the horror track when time is low, at scary moments and at the final accusation. Students can switch music off in Settings.
 

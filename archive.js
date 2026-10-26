@@ -13,9 +13,9 @@
   'use strict';
   var T = function (en, bm) { return { en: en, bm: bm }; };
   MF.ARCHIVE = [
-    { id: '001', title: T('The Missing Lunchbox', 'Kotak Makanan Yang Hilang'), tag: T('A lunchbox vanishes before recess.', 'Kotak makanan hilang sebelum rehat.'), level: 1, subjects: ['math', 'english'] },
-    { id: '002', title: T('The Lights Go Out', 'Lampu Padam'), tag: T('Who switched off the school hall lights?', 'Siapa memadamkan lampu dewan sekolah?'), level: 1, subjects: ['science', 'thinking'] },
-    { id: '003', title: T('The Painted Wall', 'Dinding Yang Dicat'), tag: T('A new mural has a mysterious extra colour.', 'Mural baru ada warna tambahan yang misteri.'), level: 2, subjects: ['english', 'geography'] },
+    { id: '001', title: T('The Missing Lunchbox', 'Kotak Makanan Yang Hilang'), tag: T('A school sleepover. A trail of blood-red drops. And a cook who is STILL HUNGRY.', 'Perkhemahan di sekolah. Jejak titisan merah darah. Dan tukang masak yang MASIH LAPAR.'), level: 1, subjects: ['science', 'math', 'english', 'thinking'], scary: true, ready: true },
+    { id: '002', title: T('The Lights Go Out', 'Lampu Padam'), tag: T('Every 12 minutes the hall goes black — and a bloody hand appears on the mirror.', 'Setiap 12 minit dewan menjadi gelap — dan tangan berdarah muncul pada cermin.'), level: 1, subjects: ['science', 'math', 'english', 'thinking'], scary: true, ready: true },
+    { id: '003', title: T('The Painted Wall', 'Dinding Yang Dicat'), tag: T('Overnight, a pale girl with bleeding eyes appeared inside the new mural.', 'Dalam satu malam, budak perempuan pucat bermata berdarah muncul dalam mural baru.'), level: 2, subjects: ['science', 'geography', 'math', 'english'], scary: true, ready: true },
     { id: '004', title: T('The Library Whisper', 'Bisikan Di Perpustakaan'), tag: T('A book is returned with a secret note.', 'Sebuah buku dikembalikan dengan nota rahsia.'), level: 2, subjects: ['english', 'thinking'] },
     { id: '005', title: T('The Sports Day Trophy', 'Piala Hari Sukan'), tag: T('The trophy is gone — and the scoreboard is wrong.', 'Piala hilang — dan papan markah salah.'), level: 2, subjects: ['math', 'thinking'] },
     { id: '006', title: T('The Squeaky Staircase', 'Tangga Yang Berkeriut'), tag: T('Strange noises at night in the old school block.', 'Bunyi pelik pada waktu malam di blok sekolah lama.'), level: 3, subjects: ['science', 'thinking'] },

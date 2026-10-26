@@ -355,10 +355,12 @@
         hints: [T('Ken and Mateo lied for small, sad reasons. Which lie hides WHERE Ingrid is?', 'Ken dan Mateo berbohong kerana sebab kecil dan sedih. Pembohongan mana yang menyembunyikan DI MANA Ingrid?'), T('Compare what Priya says with the CCTV at 10:35.', 'Bandingkan kata Priya dengan CCTV pukul 10:35.')] }
     ],
 
+    timeUp: { title: T('Midnight!', 'Tengah malam!'), text: T('The demolition crew cuts the power and water. The building groans in the dark. Name the truth NOW!', 'Pekerja perobohan memutuskan elektrik dan air. Bangunan itu berderit dalam gelap. Nyatakan kebenaran SEKARANG!') },
     conclusion: {
       who: { correct: 'ingrid' },
       what: { questionId: 'q_how' },
       when: { questionId: 'q_when' },
+      whereQ: T('WHERE is Ingrid now?', 'DI MANA Ingrid sekarang?'),
       where: [
         { id: 'cellar', text: T('In the old coal cellar under the boiler room', 'Di bilik arang batu lama di bawah bilik dandang'), correct: true },
         { id: 'tower', text: T('In the bell tower', 'Di menara loceng') }, { id: 'library', text: T('In the library', 'Di perpustakaan') }, { id: 'unknown', text: T('I do not know yet', 'Saya belum tahu') }

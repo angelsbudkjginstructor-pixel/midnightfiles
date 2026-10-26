@@ -263,3 +263,20 @@ h1 .bm + .en::before, h2 .bm + .en::before, h3 .bm + .en::before, .statrow .bm +
 #scarefx.white{background:#fff}
 #scarefx.black{background:#000}
 @keyframes scarefx{0%{opacity:0}10%{opacity:1}30%{opacity:.25}45%{opacity:.8}100%{opacity:0}}
+
+/* ---- race: freeze screen, places, team vote, help ---- */
+#freeze[hidden], #helpbox[hidden], #helpbtn[hidden] { display: none !important; }
+.lockscreen.freeze { z-index: 45; background: radial-gradient(900px 600px at 50% 35%, #1d4f7acc, #06142bee 70%); }
+.freeze .frz-n { font-size: 4.5em; font-weight: 900; color: #9be7ff; text-shadow: 0 0 24px #4fc3f7; line-height: 1.1; }
+#helpbox { position: fixed; inset: 0; z-index: 95; display: flex; align-items: center; justify-content: center; }
+.helpbtn { position: fixed; top: 10px; right: 10px; z-index: 96; }
+.help { text-align: left; } .help section { margin: 0 0 .9em; } .help h3 { margin: .2em 0 .35em; }
+.help .h-steps { list-style: none; padding: 0; margin: 0; display: grid; gap: .45em; }
+.help .h-steps li { display: flex; gap: .6em; align-items: flex-start; background: #ffffff0d; border-radius: 10px; padding: .45em .6em; }
+.help .h-ic { font-size: 1.35em; line-height: 1; } .help .h-win { border: 2px solid #f5c84299; border-radius: 12px; padding: .5em .7em; background: #f5c8420f; }
+.help-m .mbody { max-height: 70vh; overflow: auto; }
+.place-badge { margin: 0 auto .6em; padding: .5em 1em; border-radius: 14px; font-size: 1.35em; font-weight: 900; text-align: center; background: #334; }
+.place-badge.p1 { background: linear-gradient(90deg, #f5c842, #ffe9a0); color: #3a2a00; box-shadow: 0 0 24px #f5c84288; }
+.place-badge.p2 { background: linear-gradient(90deg, #c9d1dc, #f1f4f8); color: #223; } .place-badge.p3 { background: linear-gradient(90deg, #d08a4a, #f3c79d); color: #3a1d05; }
+.t-podium { list-style: none; padding: 0; margin: .3em 0; display: grid; gap: .3em; } .t-podium li { padding: .35em .6em; border-radius: 10px; background: #ffffff10; font-weight: 700; }
+.t-podium li.p1 { background: #f5c84233; border: 2px solid #f5c842; }
