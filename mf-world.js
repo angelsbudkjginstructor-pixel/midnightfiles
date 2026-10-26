@@ -11,7 +11,7 @@
     this.canvas = opts.canvas; this.C = opts.caseData; this.low = !!opts.low; this.scare = opts.scare || 0;
     this.sens = opts.sens || 0.0022; this.handlers = {}; this.running = false; this.paused = true; this.locked = false;
     this.keys = {}; this.aabbs = []; this.interactables = []; this.npcs = {}; this.rooms = []; this.lights = {}; this.flicker = {};
-    this.statics = {}; this.fired = {}; this.pending = []; this.clockHands = null; this.figure = []; this.figureRevealed = false;
+    this.statics = {}; this.fired = {}; this.pending = []; this.clockHands = null; this.figure = []; this.figureRevealed = false; this.figRev = {}; this.gates = []; this.shakeUntil = 0; this.mood = null;
     this.player = { x: 0, z: 0, yaw: 0, pitch: 0, crouch: 0, bob: 0, stepT: 0 }; this.flash = true; this.target = null; this.currentRoom = null;
     this.frames = 0; this.fpsT = 0; this.slowCount = 0; this.matCache = {};
     this._init(); this._build(); this._bind();
@@ -31,9 +31,15 @@
     this.resize();
   };
   World.prototype.resize = function () { var w = window.innerWidth, h = window.innerHeight; this.renderer.setSize(w, h, false); this.camera.aspect = w / h; this.camera.updateProjectionMatrix(); };
+  // horror cases can make the rooms darker (still brighter in Low graphics mode, because point lights are off there)
+  World.prototype._applyMood = function () {
+    var m = this.mood || {}, low = this.low;
+    this.ambient.intensity = low ? (m.ambLow != null ? m.ambLow : 0.7) : (m.amb != null ? m.amb : 0.3);
+    this.hemi.intensity = low ? (m.hemiLow != null ? m.hemiLow : 0.45) : (m.hemi != null ? m.hemi : 0.3);
+  };
   World.prototype.setLow = function (low) {
     this.low = low; this.renderer.setPixelRatio(low ? 0.6 : Math.min(window.devicePixelRatio || 1, 1.25)); this.resize();
-    this.ambient.intensity = low ? 0.7 : 0.3; this.hemi.intensity = low ? 0.45 : 0.3;
+    this._applyMood();
     for (var id in this.lights) this.lights[id].light.visible = !low;
     if (this.scene.fog) this.scene.fog.far = low ? 40 : 60;
   };
@@ -57,6 +63,8 @@
   World.prototype._build = function () {
     var self = this, C = this.C, H = 3.0;
     var W = {
+      mood: function (o) { self.mood = o; self._applyMood(); },
+      fog: function (near, far) { if (self.scene.fog) { self.scene.fog.near = near; self.scene.fog.far = far; } },
       sky: function (c) { self.scene.background = new THREE.Color(c); self.scene.fog = new THREE.Fog(c, 16, self.low ? 40 : 60); },
       spawn: function (x, z, yaw) { self.player.x = x; self.player.z = z; self.player.yaw = yaw || 0; self.spawnPoint = { x: x, z: z, yaw: yaw || 0 }; },
       room: function (id, x0, z0, x1, z1, name, indoor, floorCol, ceilCol, ceilH) {
@@ -67,7 +75,7 @@
       floor: function (x0, z0, x1, z1, col, y) { var f = new THREE.Mesh(new THREE.PlaneGeometry(x1 - x0, z1 - z0), self.mat(col)); f.rotation.x = -Math.PI / 2; f.position.set((x0 + x1) / 2, y || 0.003, (z0 + z1) / 2); self.scene.add(f); },
       box: function (cx, y0, cz, w, h, d, col, o) {
         o = o || {}; var geo = new THREE.BoxGeometry(w, h, d);
-        if (o.name) { var m = new THREE.Mesh(geo, self.mat(col)); m.position.set(cx, y0 + h / 2, cz); m.name = o.name; self.scene.add(m); if (o.name === 'figure') self.figure.push(m); }
+        if (o.name) { var m = new THREE.Mesh(geo, self.mat(col)); m.position.set(cx, y0 + h / 2, cz); m.name = o.name; self.scene.add(m); if (/^figure/.test(o.name)) self.figure.push(m); }
         else self._addStatic(geo, col, cx, y0 + h / 2, cz);
         if (o.collide !== false && h > 0.3) self.aabbs.push({ x0: cx - w / 2, x1: cx + w / 2, z0: cz - d / 2, z1: cz + d / 2, wall: false });
       },
@@ -77,7 +85,7 @@
       },
       ball: function (cx, cy, cz, r, col, o) {
         o = o || {};
-        if (o.name) { var m = new THREE.Mesh(new THREE.SphereGeometry(r, 8, 6), self.mat(col)); m.position.set(cx, cy, cz); m.name = o.name; self.scene.add(m); if (o.name === 'figure') self.figure.push(m); }
+        if (o.name) { var m = new THREE.Mesh(new THREE.SphereGeometry(r, 8, 6), self.mat(col)); m.position.set(cx, cy, cz); m.name = o.name; self.scene.add(m); if (/^figure/.test(o.name)) self.figure.push(m); }
         else self._addStatic(new THREE.SphereGeometry(r, 8, 6), col, cx, cy, cz);
       },
       wallX: function (x, z0, z1, gaps, h, col) { self._wall('x', x, z0, z1, gaps, h, col); },
@@ -87,6 +95,20 @@
       },
       decal: function (x, z, w, d, rot, col, o) { var m = new THREE.Mesh(new THREE.CircleGeometry(0.5, 14), self.mat(col)); m.rotation.x = -Math.PI / 2; m.rotation.z = rot || 0; m.scale.set(w, d, 1); m.position.set(x, (o && o.y) || 0.01, z); self.scene.add(m); },
       trail: function (pts) { self._trail(pts); },
+      // writing painted on a wall or floor (blood-red words, chalk, etc). rotY = 0 faces +z, PI faces -z, PI/2 faces +x, -PI/2 faces -x
+      writing: function (x, y, z, rotY, txt, col, w, h, flat) {
+        var cv = document.createElement('canvas'); cv.width = 512; cv.height = Math.max(64, Math.round(512 * (h || 0.5) / (w || 1.4))); var c = cv.getContext('2d');
+        c.fillStyle = col || '#a01010'; c.textAlign = 'center'; c.textBaseline = 'middle'; var size = 78, lines = String(MF.tp(txt)).split('|');
+        do { c.font = 'bold ' + size + 'px "Comic Sans MS","Trebuchet MS",cursive'; size -= 4; } while (size > 20 && Math.max.apply(null, lines.map(function (l) { return c.measureText(l).width; })) > 490);
+        lines.forEach(function (l, i) { c.fillText(l, 256, cv.height / 2 + (i - (lines.length - 1) / 2) * (size + 12)); });
+        var t = new THREE.CanvasTexture(cv), m = new THREE.Mesh(new THREE.PlaneGeometry(w || 1.4, h || 0.5), new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false, opacity: 0.92 }));
+        m.position.set(x, y, z); if (flat) { m.rotation.x = -Math.PI / 2; m.rotation.z = rotY || 0; } else m.rotation.y = rotY || 0; self.scene.add(m);
+      },
+      // a box that BLOCKS the way until the game flag is set (e.g. a locked hatch or a hidden door)
+      gate: function (flag, cx, y0, cz, w, h, d, col) {
+        var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), self.mat(col)); m.position.set(cx, y0 + h / 2, cz); self.scene.add(m);
+        var bb = { x0: cx - w / 2, x1: cx + w / 2, z0: cz - d / 2, z1: cz + d / 2, wall: true }; self.aabbs.push(bb); self.gates.push({ flag: flag, mesh: m, bb: bb });
+      },
       clock: function (x, y, z) { self._clock(x, y, z); },
       interact: function (o) { o.r = o.r || 0.5; self.interactables.push(o); },
       npc: function (o) { self._npc(o); }
@@ -224,12 +246,28 @@
 
   /* ------------------------------------------------------------ spooky moments (mild; teacher sets the scare level) */
   World.prototype.setScare = function (n) {
-    this.scare = n; var hz = this.C.horror, show = hz && hz.figure && n >= hz.figure.minScare;
-    this.figure.forEach(function (m) { m.visible = !!show; });
+    this.scare = n; var defs = this._figDefs();
+    this.figure.forEach(function (m) { var d = defs[m.name]; m.visible = !!(d && n >= d.minScare && !m.userData.gone); });
+  };
+  World.prototype.openGate = function (flag) {
+    var self = this; this.gates.forEach(function (g) { if (g.flag === flag && g.mesh.visible) { g.mesh.visible = false; var i = self.aabbs.indexOf(g.bb); if (i >= 0) self.aabbs.splice(i, 1); } });
+  };
+  // figure definitions: the old single "figure" or the new "figures" list
+  World.prototype._figDefs = function () {
+    var hz = this.C.horror || {}, out = {};
+    if (hz.figure) out.figure = Object.assign({ name: 'figure' }, hz.figure);
+    (hz.figures || []).forEach(function (f) { out[f.name] = f; });
+    return out;
   };
   World.prototype._flicker = function (room, secs) { this.flicker[room] = { until: performance.now() + secs * 1000 }; MF.Sfx.play('flicker'); };
   World.prototype._runFx = function (fx) {
-    var p = fx.split(':'); if (p[0] === 'flicker') this._flicker(p[1], parseFloat(p[2]) || 1.5); else if (p[0] === 'sfx') MF.Sfx.play(p[1]);
+    var p = fx.split(':');
+    if (p[0] === 'flicker') this._flicker(p[1], parseFloat(p[2]) || 1.5);
+    else if (p[0] === 'sfx') MF.Sfx.play(p[1]);
+    else if (p[0] === 'blackout') { var until = performance.now() + (parseFloat(p[1]) || 2) * 1000; for (var rid in this.lights) this.flicker[rid] = { until: until, off: true }; MF.Sfx.play('flicker'); }
+    else if (p[0] === 'shake') { this.shakeUntil = performance.now() + (parseFloat(p[1]) || 0.6) * 1000; }
+    else if (p[0] === 'flash') this.emit('fx', p[1] || 'red');                       // red / white / black screen flash
+    else if (p[0] === 'music') { if (MF.Music) MF.Music.sting(p[1] || 'tense', parseFloat(p[2]) || 8); }
   };
   World.prototype._checkZones = function () {
     var hz = this.C.horror; if (!hz) return; var room = this.roomAt(this.player.x, this.player.z);
@@ -237,13 +275,19 @@
     if (!room || this.scare < 1) return; var self = this;
     (hz.zones || []).forEach(function (z) {
       if (z.room !== room.id || self.fired[z.id] || self.scare < (z.minScare || 1)) return; self.fired[z.id] = true;
-      self.pending.push({ at: performance.now() + (z.delay || 0.6) * 1000, fx: z.fx });
+      self.pending.push({ at: performance.now() + (z.delay || 0.6) * 1000, fx: z.fx, text: z.text });
     });
-    var f = hz.figure;
-    if (f && this.scare >= f.minScare && !this.figureRevealed && this.figure.length && room.id === f.room) {
-      var fp = this.figure[0].position, dx = fp.x - this.player.x, dz = fp.z - this.player.z;
-      if (dx * dx + dz * dz < f.revealDistance * f.revealDistance) { this.figureRevealed = true; this._flicker('CR', 1.2); MF.Sfx.play('thump'); this.emit('reveal', f.reveal); }
-    }
+    var defs = this._figDefs(), self2 = this;
+    Object.keys(defs).forEach(function (nm) {
+      var f = defs[nm]; if (self2.scare < f.minScare || self2.figRev[nm] || room.id !== f.room) return;
+      var ms = self2.figure.filter(function (m) { return m.name === nm; }); if (!ms.length) return;
+      var fp = ms[0].position, dx = fp.x - self2.player.x, dz = fp.z - self2.player.z;
+      if (dx * dx + dz * dz < f.revealDistance * f.revealDistance) {
+        self2.figRev[nm] = true; if (nm === 'figure') self2.figureRevealed = true;
+        self2._flicker(f.flickerRoom || f.room, 1.2); MF.Sfx.play(f.sfx || 'thump'); (f.fx || []).forEach(self2._runFx, self2); if (f.reveal) self2.emit('reveal', f.reveal);
+        if (f.vanish) setTimeout(function () { ms.forEach(function (m) { m.visible = false; m.userData.gone = true; }); }, (f.vanishAfter || 1.4) * 1000);
+      }
+    });
   };
 
   /* ------------------------------------------------------------ main loop */
@@ -262,7 +306,8 @@
       }
     }
     // camera
-    var bobY = Math.sin(p.bob) * 0.025; this.camera.position.set(p.x, this.eyeY() + bobY, p.z); this.camera.rotation.order = 'YXZ'; this.camera.rotation.y = p.yaw; this.camera.rotation.x = p.pitch;
+    var bobY = Math.sin(p.bob) * 0.025; var sh = now < this.shakeUntil ? 0.03 : 0;
+    this.camera.position.set(p.x + (sh ? (Math.random() - 0.5) * sh : 0), this.eyeY() + bobY + (sh ? (Math.random() - 0.5) * sh : 0), p.z); this.camera.rotation.order = 'YXZ'; this.camera.rotation.y = p.yaw + (sh ? (Math.random() - 0.5) * sh : 0); this.camera.rotation.x = p.pitch;
     // interaction target
     if (!this.paused && this.locked) { var tg = this._findTarget(); if (tg !== this.target) { this.target = tg; this.emit('target', tg); } } else if (this.target) { this.target = null; this.emit('target', null); }
     // npc idle: face the player when near
@@ -272,17 +317,17 @@
     }
     // flicker + scheduled spooky moments
     for (var rid in this.lights) {
-      var L = this.lights[rid], f = this.flicker[rid]; if (f && now < f.until) L.light.intensity = L.base * (Math.random() < 0.5 ? 0.05 : 1.1); else { L.light.intensity = L.base; if (f) delete this.flicker[rid]; }
+      var L = this.lights[rid], f = this.flicker[rid]; if (f && now < f.until) L.light.intensity = f.off ? 0 : L.base * (Math.random() < 0.5 ? 0.05 : 1.1); else { L.light.intensity = L.base; if (f) delete this.flicker[rid]; }
     }
-    for (var i = this.pending.length - 1; i >= 0; i--) if (now >= this.pending[i].at) { var job = this.pending.splice(i, 1)[0]; job.fx.forEach(this._runFx, this); }
+    for (var i = this.pending.length - 1; i >= 0; i--) if (now >= this.pending[i].at) { var job = this.pending.splice(i, 1)[0]; job.fx.forEach(this._runFx, this); if (job.text) this.emit('reveal', job.text); }
     this._zoneT = (this._zoneT || 0) + dt; if (this._zoneT > 0.25) { this._zoneT = 0; this._checkZones(); }
     if (!this.frozen) this.renderer.render(this.scene, this.camera);
     // slow-computer detector → suggests low graphics
     this.frames++; this.fpsT += dt;
     if (this.fpsT > 3) { var fps = this.frames / this.fpsT; this.frames = 0; this.fpsT = 0; this.fps = fps; if (!this.paused && this.locked && !this.low) { this.slowCount = fps < 24 ? this.slowCount + 1 : 0; if (this.slowCount >= 2) { this.slowCount = 0; this.emit('slow', fps); } } }
   };
-  World.prototype.getState = function () { var p = this.player; return { x: +p.x.toFixed(2), z: +p.z.toFixed(2), yaw: +p.yaw.toFixed(2), flash: this.flash, fired: this.fired, figureRevealed: this.figureRevealed }; };
-  World.prototype.setState = function (s) { if (!s) return; var p = this.player; p.x = s.x; p.z = s.z; p.yaw = s.yaw || 0; this.flash = s.flash !== false; this.fired = s.fired || {}; this.figureRevealed = !!s.figureRevealed; };
+  World.prototype.getState = function () { var p = this.player; return { x: +p.x.toFixed(2), z: +p.z.toFixed(2), yaw: +p.yaw.toFixed(2), flash: this.flash, fired: this.fired, figureRevealed: this.figureRevealed, figRev: this.figRev }; };
+  World.prototype.setState = function (s) { if (!s) return; var p = this.player; p.x = s.x; p.z = s.z; p.yaw = s.yaw || 0; this.flash = s.flash !== false; this.fired = s.fired || {}; this.figureRevealed = !!s.figureRevealed; this.figRev = s.figRev || (s.figureRevealed ? { figure: true } : {}); };
   World.prototype.dispose = function () {
     this.stop(); document.removeEventListener('keydown', this._kd); document.removeEventListener('keyup', this._ku); document.removeEventListener('mousemove', this._mm);
     document.removeEventListener('pointerlockchange', this._pl); window.removeEventListener('resize', this._rz); window.removeEventListener('blur', this._bl);

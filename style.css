@@ -255,3 +255,11 @@ h1 .bm + .en::before, h2 .bm + .en::before, h3 .bm + .en::before, .statrow .bm +
 /* the 3D evidence box has a fixed size so tall objects (the watch) never push the page */
 .ins-left { height: min(58vh, 470px); } .insp-cv { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; }
 .modal.inspect .mbody { align-items: start; }
+
+/* ---- screen flash for scary moments (red / white / black) — a plain CSS animation, very cheap ---- */
+#scarefx{position:fixed;inset:0;pointer-events:none;z-index:30;opacity:0}
+#scarefx.go{animation:scarefx .9s ease-out 1}
+#scarefx.red{background:radial-gradient(ellipse at center,rgba(120,0,0,.15) 20%,rgba(170,0,0,.85) 100%)}
+#scarefx.white{background:#fff}
+#scarefx.black{background:#000}
+@keyframes scarefx{0%{opacity:0}10%{opacity:1}30%{opacity:.25}45%{opacity:.8}100%{opacity:0}}

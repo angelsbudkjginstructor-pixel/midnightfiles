@@ -103,6 +103,23 @@ window.MF = window.MF || {};
         case 'alarm':  this.tone(880, 0.16, 'square', 0.07); this.tone(660, 0.16, 'square', 0.07, 0.2); break;
         case 'win':    [523, 659, 784, 1047, 784, 1047, 1319].forEach(function (f, k) { MF.Sfx.tone(f, 0.28, 'triangle', 0.14, k * 0.13); }); break;
         case 'sad':    [392, 349, 330, 262].forEach(function (f, k) { MF.Sfx.tone(f, 0.4, 'sine', 0.12, k * 0.25); }); break;
+        /* ---- extra scary sounds (all made from simple tones and noise: no files to download) ---- */
+        case 'bell':   this.tone(392, 2.6, 'sine', 0.16); this.tone(784, 1.8, 'sine', 0.07); this.tone(1180, 1.1, 'sine', 0.04); this.tone(196, 2.6, 'sine', 0.08); break;
+        case 'bell3':  [0, 1.6, 3.2].forEach(function (w) { MF.Sfx.tone(392, 2.0, 'sine', 0.14, w); MF.Sfx.tone(784, 1.3, 'sine', 0.06, w); }); break;
+        case 'whisper': for (var w1 = 0; w1 < 5; w1++) this.noise(0.35 + Math.random() * 0.2, 0.05, 2600 + Math.random() * 1800, w1 * 0.42, 2.4); break;
+        case 'heartbeat': for (var h1 = 0; h1 < 5; h1++) { this.tone(58, 0.14, 'sine', 0.38, h1 * 0.85, 38); this.tone(52, 0.16, 'sine', 0.3, h1 * 0.85 + 0.22, 34); } break;
+        case 'knock':  for (var k1 = 0; k1 < 3; k1++) { this.noise(0.07, 0.35, 260, k1 * 0.38, 2); this.tone(90, 0.09, 'sine', 0.25, k1 * 0.38, 60); } break;
+        case 'scratch': for (var s1 = 0; s1 < 9; s1++) this.noise(0.09, 0.07, 3800 + Math.random() * 2500, s1 * 0.07, 1.6); break;
+        case 'static': this.noise(0.9, 0.09, 5200, 0, 0.3); this.noise(0.6, 0.05, 1800, 0.2, 0.4); break;
+        case 'wind':   this.noise(2.4, 0.07, 380, 0, 0.5); this.noise(2.4, 0.04, 700, 0.3, 0.6); break;
+        case 'drip':   this.tone(1250, 0.09, 'sine', 0.09, 0, 640); this.tone(900, 0.12, 'sine', 0.04, 0.12, 500); break;
+        case 'sting':  this.tone(880, 0.7, 'sawtooth', 0.09, 0, 2300); this.tone(930, 0.7, 'sawtooth', 0.07, 0.02, 2500); this.noise(0.4, 0.12, 4500, 0.05, 0.5); this.tone(70, 0.5, 'sine', 0.3, 0, 40); break;
+        case 'slam':   this.tone(75, 0.3, 'sine', 0.38, 0, 38); this.noise(0.25, 0.25, 700, 0, 0.6); break;
+        case 'thunder': this.noise(2.2, 0.22, 140, 0, 0.5); this.tone(48, 1.8, 'sine', 0.3, 0.1, 30); break;
+        case 'voice':  this.tone(330, 1.4, 'triangle', 0.035, 0, 262); this.tone(247, 1.6, 'triangle', 0.03, 0.3, 196); this.noise(1.4, 0.025, 1400, 0, 3); break;
+        case 'sos':    [0, 0.32, 0.64].forEach(function (w) { MF.Sfx.tone(560, 0.14, 'sine', 0.16, w); });
+                       [1.1, 1.75, 2.4].forEach(function (w) { MF.Sfx.tone(560, 0.42, 'sine', 0.16, w); });
+                       [3.2, 3.52, 3.84].forEach(function (w) { MF.Sfx.tone(560, 0.14, 'sine', 0.16, w); }); break;
         case 'unlock': this.tone(400, 0.1, 'square', 0.08); this.tone(800, 0.2, 'square', 0.08, 0.1); break;
       }
     },

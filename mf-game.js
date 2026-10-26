@@ -227,8 +227,8 @@
     var out = [], self = this, fixed = this.flag('clock_fixed');
     this.foundList().forEach(function (it) {
       if (it.photo) {
-        var t = fixed ? it.realT : it.stampT;
-        out.push({ t: t, id: it.id, kind: 'photo', title: it.title, text: it.timeline, warn: !fixed, was: fixed ? it.stampT : null });
+        var fx = it.realT != null && self.flag(it.fixFlag || 'clock_fixed'), t = fx ? it.realT : (it.stampT != null ? it.stampT : (it.t || 0));   // photos without a time stamp use item.t
+        out.push({ t: t, id: it.id, kind: 'photo', title: it.title, text: it.timeline, warn: it.realT != null && !fx, was: fx ? it.stampT : null });
       } else if (it.kind === 'claim' && it.t) out.push({ t: it.t, id: it.id, kind: 'claim', title: it.title, text: null });
     });
     out.sort(function (a, b) { return a.t - b.t; }); return out;

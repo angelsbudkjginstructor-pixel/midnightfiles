@@ -64,7 +64,7 @@
       var it = g.item(sel), cat = UI.catOf(it), k = UI.KIND[cat];
       var box = el('div', 'ev-detail'); box.style.setProperty('--kc', k.c);
       box.innerHTML = '<h3>' + (it.icon || '') + ' ' + MF.t(it.title) + '</h3><div class="ins-status">' + UI.badge(it) + ' ' + UI.statusBadge(it) + '</div>' + (it.where ? '<p class="ins-where">📍 ' + MF.t(it.where) + '</p>' : '') + '<p class="ins-desc">' + MF.t(it.desc) + '</p>';
-      if (it.photo) { var fixed = g.flag('clock_fixed'); box.insertAdjacentHTML('beforeend', '<p class="ins-where">📷 ' + MF.fmtTime(it.stampT) + (fixed ? ' → <b class="okt">' + MF.fmtTime(it.realT) + '</b>' : ' <span class="warn-t">(' + X('camera time — not checked', 'masa kamera — belum disemak') + ')</span>') + '</p>'); }
+      if (it.photo && it.stampT != null) { var fixed = g.flag(it.fixFlag || 'clock_fixed'); box.insertAdjacentHTML('beforeend', '<p class="ins-where">📷 ' + MF.fmtTime(it.stampT) + (it.realT == null ? '' : (fixed ? ' → <b class="okt">' + MF.fmtTime(it.realT) + '</b>' : ' <span class="warn-t">(' + X('camera time — not checked', 'masa kamera — belum disemak') + ')</span>')) + '</p>'); }
       if (g.S.shared[it.id]) box.insertAdjacentHTML('beforeend', '<p class="tip">🤝 ' + X('Shared by your team', 'Dikongsi oleh pasukan anda') + '</p>');
       var marks = el('div', 'mark-btns'); [['rel', '⭐', X('Important', 'Penting')], ['irr', '🚫', X('Not important', 'Tidak penting')], ['unsure', '❔', X('Not sure', 'Tidak pasti')]].forEach(function (a) {
         marks.appendChild(UI.btn(a[1] + ' ' + a[2], 'ghost small' + (g.S.marks[it.id] === a[0] ? ' on' : ''), function () { g.setMark(it.id, g.S.marks[it.id] === a[0] ? null : a[0]); redraw(); }));

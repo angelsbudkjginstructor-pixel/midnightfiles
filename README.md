@@ -3,7 +3,11 @@
 A first-person 3D detective game for Chrome. Students play **only while the teacher page is open**.
 Permainan detektif 3D untuk Chrome. Murid hanya boleh bermain **semasa halaman cikgu dibuka**.
 
-Case 009 "The Birthday Party Mystery" is ready (easy, with a twist). Cases 001–008 and 010 show "Coming soon".
+Ready to play: 009 "The Birthday Party Mystery" (easy, with a twist) and three scary thriller cases (010 "The Last Bell" abandoned school, 011 "Room 13, Hotel Belladonna", 012 "The Lighthouse at Skerry Point" with a real ghost twist). The scary cases use scare level Low/Medium chosen by the teacher; blood appears only as clues, never as gore. Cases 001–008 show "Coming soon".
+
+Music: three small mp3 files (mus-intro, mus-explore, mus-tense) are loaded only when needed. Intro plays on menus and briefing, the waltz while exploring, and the horror track when time is low, at scary moments and at the final accusation. Students can switch music off in Settings.
+
+Language: English by default. Bahasa Malaysia + English is shown only when the teacher chooses it in the teacher page; every case still carries its BM translations.
 
 ---
 

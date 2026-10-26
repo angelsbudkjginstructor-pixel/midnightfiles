@@ -22,7 +22,9 @@
     { id: '007', title: T('The Night Market Mix-up', 'Kekeliruan Pasar Malam'), tag: T('Two stalls, one stolen bag, three witnesses.', 'Dua gerai, satu beg dicuri, tiga saksi.'), level: 3, subjects: ['math', 'geography'] },
     { id: '008', title: T('The Broken Science Lab', 'Makmal Sains Yang Rosak'), tag: T('A mess in the lab. Accident or sabotage?', 'Makmal bersepah. Kemalangan atau sabotaj?'), level: 3, subjects: ['science', 'thinking'] },
     { id: '009', title: T('The Birthday Party Mystery', 'Misteri Majlis Hari Jadi'), tag: T("Atuk's gold watch has vanished!", 'Jam emas Atuk hilang!'), level: 1, subjects: ['math', 'english', 'science', 'geography'], ready: true },
-    { id: '010', title: T('The Midnight Museum', 'Muzium Tengah Malam'), tag: T('The final case: a museum, a map and a missing key.', 'Kes akhir: sebuah muzium, peta dan kunci yang hilang.'), level: 4, subjects: ['geography', 'thinking'] }
+    { id: '010', title: T('The Last Bell', 'Loceng Terakhir'), tag: T('An abandoned school. A bell that rings by itself. A ghost-hunter who vanished.', 'Sekolah terbiar. Loceng yang berbunyi sendiri. Pemburu hantu yang hilang.'), level: 3, subjects: ['math', 'english', 'thinking'], scary: true, ready: true },
+    { id: '011', title: T('Room 13, Hotel Belladonna', 'Bilik 13, Hotel Belladonna'), tag: T('A stormy night, a blackout and a bride who walks the halls.', 'Malam ribut, gelap gelita dan pengantin yang berjalan di lorong.'), level: 3, subjects: ['geography', 'math', 'science'], scary: true, ready: true },
+    { id: '012', title: T('The Lighthouse at Skerry Point', 'Rumah Api Skerry Point'), tag: T('The light is on... but the keeper died years ago.', 'Lampu menyala... tetapi penjaga sudah lama meninggal.'), level: 4, subjects: ['geography', 'science', 'thinking'], scary: true, ready: true }
   ];
   MF.playable = function (id) {
     var a = MF.ARCHIVE.filter(function (c) { return c.id === id; })[0]; return !!(a && a.ready && MF.cases[id]);

@@ -195,10 +195,10 @@
   };
   UI.photoBody = function (it, host) {
     var g = UI.g; host.innerHTML = '';
-    var fixed = g.flag('clock_fixed'), stamp = MF.fmtTime(it.stampT);
+    var fixed = g.flag(it.fixFlag || 'clock_fixed') && it.realT != null, stamp = it.stampT != null ? MF.fmtTime(it.stampT) : '';
     var wrap = UI.photoWidget(it, function () { g.markViewed(it.id + ':zoom'); notice.hidden = false; notice.innerHTML = '🔍 ' + MF.t(it.zoomNotice); MF.Sfx.play('good'); });
     var side = el('div', 'pv-side');
-    side.innerHTML = '<p class="ins-where">📷 ' + X('Camera time stamp', 'Cap masa kamera') + ': <b>' + stamp + '</b>' + (fixed ? ' → ' + X('real time', 'masa sebenar') + ': <b class="okt">' + MF.fmtTime(it.realT) + '</b>' : '') + '</p><p class="ins-desc">' + MF.t(it.desc) + '</p>';
+    side.innerHTML = (it.stampT != null ? '<p class="ins-where">📷 ' + (it.stampLabel ? MF.t(it.stampLabel) : X('Camera time stamp', 'Cap masa kamera')) + ': <b>' + stamp + '</b>' + (fixed ? ' → ' + X('real time', 'masa sebenar') + ': <b class="okt">' + MF.fmtTime(it.realT) + '</b>' : '') + '</p>' : '<p class="ins-where">📍 ' + (it.where ? MF.t(it.where) : '') + '</p>') + '<p class="ins-desc">' + MF.t(it.desc) + '</p>';
     var notice = el('div', 'zoom-notice'); notice.hidden = true; side.appendChild(notice);
     if (g.S.viewed[it.id + ':zoom']) { notice.hidden = false; notice.innerHTML = '🔍 ' + MF.t(it.zoomNotice); }
     else side.insertAdjacentHTML('beforeend', '<p class="tip">💡 ' + X('Zoom in to look for small details!', 'Zum masuk untuk mencari butiran kecil!') + '</p>');

@@ -16,6 +16,7 @@
     for (var i = 0; i < 10; i++) { var a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * 0.45 : r; c.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
     c.closePath(); c.fill();
   }
+  A.h = { rect: rect, circ: circ, line: line, text: text, star: star };   // drawing helpers shared with case files
   A.clockFace = function (c, cx, cy, r, h, m) {
     circ(c, cx, cy, r + 5, '#5a3b22'); circ(c, cx, cy, r, '#fffdf5');
     for (var i = 0; i < 12; i++) { var a = i * Math.PI / 6; line(c, cx + Math.sin(a) * r * 0.82, cy - Math.cos(a) * r * 0.82, cx + Math.sin(a) * r * 0.94, cy - Math.cos(a) * r * 0.94, '#333', Math.max(1.5, r / 14)); }

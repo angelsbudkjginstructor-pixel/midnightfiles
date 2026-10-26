@@ -22,14 +22,14 @@
     low: MF.store.get('mf.low', false), sens: MF.store.get('mf.sens', 0.0022), vol: MF.store.get('mf.vol', 0.55), scarePref: MF.store.get('mf.scare', 2),
     gate: null, ended: false, team: null, rev: -1, pendingShare: [], applyingShare: false, lastProg: 0, autoLow: false, sid: '' };
   try { S.sid = sessionStorage.getItem('mf.sid') || ('s' + Math.random().toString(36).slice(2, 9)); sessionStorage.setItem('mf.sid', S.sid); } catch (e) { S.sid = 's' + Math.random().toString(36).slice(2, 9); }
-  MF.Sfx.setVolume(S.vol);
+  MF.Sfx.setVolume(S.vol); if (MF.Music) MF.Music.setVolume(S.vol);
 
   var slug = function (s) { return String(s || 'x').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 24); };
   var saveKey = function (id) { return 'mf.save.' + (PREVIEW ? 'preview' : slug(S.name)) + '.' + id; };
 
   /* ------------------------------------------------------------------ screens */
   function show(id) {
-    ['s-join', 's-wait', 's-archive', 's-brief'].forEach(function (i) { $(i).hidden = (i !== id); }); $('game').hidden = (id !== 'game'); S.screen = id.replace(/^s-/, '');
+    ['s-join', 's-wait', 's-archive', 's-brief'].forEach(function (i) { $(i).hidden = (i !== id); }); $('game').hidden = (id !== 'game'); S.screen = id.replace(/^s-/, ''); if (id !== 'game' && MF.Music) MF.Music.set('menu');
   }
   function langButtons() {
     return '<div class="seg lang-seg">' + [['both', 'BM + EN'], ['bm', 'Bahasa Malaysia'], ['en', 'English']].map(function (l) { return '<button class="btn ghost small' + (MF.lang === l[0] ? ' on' : '') + '" data-lang="' + l[0] + '">' + l[1] + '</button>'; }).join('') + '</div>';
@@ -135,8 +135,8 @@
   }
   function applyGate() {
     var g = computeGate(); if (g === S.gate) return; var was = S.gate; S.gate = g; renderLock();
-    if (g) { if (S.world) { S.world.setPaused(true); S.world.unlock(); } MF.Sfx.ambient(false); saveNow(); sendProg(true); }
-    else if (was) { if (S.screen === 'game') showOverlay('pause'); routeIfWaiting(); }
+    if (g) { if (S.world) { S.world.setPaused(true); S.world.unlock(); } ambientOff(); if (MF.Music) MF.Music.hold(true); saveNow(); sendProg(true); }
+    else if (was) { if (MF.Music) MF.Music.hold(false); if (S.screen === 'game') showOverlay('pause'); routeIfWaiting(); }
   }
   function renderLock() {
     var el = $('lock'); if (!S.gate) { el.hidden = true; return; }
@@ -227,8 +227,12 @@
       var a = document.activeElement; if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && U.stack.length) return;
       if (S.gate || g.S.over) return; if (U.isOpen('notebook')) { U.top().close(); return; } if (!U.stack.length) U.openNotebook();
     });
-    w.on('lock', function (locked) { if (locked) { $('ov').innerHTML = ''; MF.Sfx.ambient(true); } else { MF.Sfx.ambient(false); if (!U.stack.length && !S.gate && !g.S.over && !S.finishing) showOverlay('pause'); } });
+    w.on('lock', function (locked) { if (locked) { $('ov').innerHTML = ''; ambientOn(); } else { ambientOff(); if (!U.stack.length && !S.gate && !g.S.over && !S.finishing) showOverlay('pause'); } });
     w.on('room', function (r) { if (r) { g.S.rooms[r.id] = 1; U.updateHud(r.name); } });
+    w.on('fx', function (kind) { var f = $('scarefx'); if (!f) return; f.className = ''; void f.offsetWidth; f.className = 'go ' + kind; });
+    var openGates = function () { Object.keys(g.S.flags || {}).forEach(function (fl) { if (g.S.flags[fl]) w.openGate(fl); }); }; openGates();
+    g.on('flag', function (fl) { w.openGate(fl); });
+    g.on('ending', function () { if (MF.Music) { S.musicMode = 'menu'; MF.Music.set('menu'); } });
     w.on('reveal', function (txt) { U.toast('😮 ' + MF.t(txt), 'warn', 5500); });
     w.on('flash', function (on) { var f = $('flashfx'); f.classList.toggle('on', false); document.getElementById('h-fl').style.opacity = on ? 1 : 0.35; });
     w.on('slow', function (fps) { if (!S.low) { setLow(true); U.toast('🐢 ' + X('Your computer is slow, so Low graphics was turned on.', 'Komputer anda perlahan, jadi Grafik rendah dihidupkan.'), 'warn', 6000); S.autoLow = true; } });
@@ -246,6 +250,10 @@
     var g = S.game, w = S.world; if (!g || !w) return; var U = UI();
     if (!g.S.over && w.locked && !w.paused && !U.stack.length && !S.gate) g.tick(0.25);
     U.updateHud(); w.setClock(g.clockMin());
+    if (S.tickN % 4 === 3 && MF.Music && !S.gate && !g.S.over) {                       // once a second: switch music if needed
+      var want = (U.isOpen('conclusion') || (w.locked && !w.paused)) ? wantMusic() : null;
+      if (want && want !== S.musicMode) { S.musicMode = want; MF.Music.set(want); }
+    }
     if (++S.tickN % 40 === 0) { g.S.pos = w.getState(); g.save(); }
     if (S.tickN % 20 === 0) sendProg(false);
   }
@@ -253,6 +261,7 @@
 
   function onInteract(t) {
     var g = S.game, U = UI(); if (S.gate || U.stack.length) return;
+    if (t.needsFlag && !g.flag(t.needsFlag)) return U.openText(t.label, t.lockedText || { en: 'It is locked or stuck. You need to find out how to open it.', bm: 'Ia dikunci atau tersekat. Anda perlu cari cara untuk membukanya.' });
     if (t.npc) return U.openDialogue(t.npc);
     if (t.item) return U.openItem(t.item);
     if (t.text === 'CLOCK') { var tm = MF.fmtTime(g.clockMin()); return U.openText(t.label, { en: 'The wall clock says ' + tm + '. (Remember: the camera clock may be different!)', bm: 'Jam dinding menunjukkan ' + tm + '. (Ingat: jam kamera mungkin berbeza!)' }); }
@@ -274,7 +283,7 @@
   function showOverlay(mode) {
     var ov = $('ov'), U = UI(); ov.innerHTML = ''; if (mode === 'none' || S.gate || !S.world) return;
     if (U.stack.length) return; var box = document.createElement('div'); box.className = 'overlay'; ov.appendChild(box);
-    var resume = function () { MF.Sfx.init(); MF.Sfx.resume(); ov.innerHTML = ''; S.world.setPaused(false); S.world.setFrozen(false); S.world.lock(); MF.Sfx.ambient(true); };
+    var resume = function () { MF.Sfx.init(); MF.Sfx.resume(); ov.innerHTML = ''; S.world.setPaused(false); S.world.setFrozen(false); S.world.lock(); ambientOn(); };
     if (mode === 'start') {
       var C = S.game.C; box.innerHTML = '<h1 class="logo" style="font-size:2.4em">' + MF.t(C.title) + '</h1><p class="big-p" style="max-width:640px">' + MF.t(C.tagline) + '</p><div class="menu-col"><button class="btn primary big" id="o-go">🖱️ ' + X('Click to start', 'Klik untuk mula') + '</button></div><p class="tip">' + X('Tip: press Esc to pause. Press Tab to open your notebook.', 'Petua: tekan Esc untuk jeda. Tekan Tab untuk membuka buku nota.') + '</p>';
       $('o-go').onclick = function () { S.world.setPaused(false); resume(); UI().toast('🎯 ' + X('Look around. Press E on things that glow!', 'Lihat sekeliling. Tekan E pada benda yang menarik!'), 'ev', 6000); };
@@ -293,15 +302,26 @@
       '<div class="set-row"><b>🌐 ' + X('Language', 'Bahasa') + '</b>' + langButtons() + '</div>' +
       '<div class="set-row"><b>🖱️ ' + X('Mouse speed', 'Kelajuan tetikus') + '</b><input type="range" id="s-sens" min="0.0008" max="0.005" step="0.0002" value="' + S.sens + '"></div>' +
       '<div class="set-row"><b>🔊 ' + X('Volume', 'Kelantangan') + '</b><input type="range" id="s-vol" min="0" max="1" step="0.05" value="' + S.vol + '"></div>' +
+      '<div class="set-row"><b>🎵 ' + X('Music', 'Muzik') + '</b><button class="btn ghost small ' + (MF.Music && MF.Music.on ? 'on' : '') + '" id="s-mus">' + (MF.Music && MF.Music.on ? '✔ ON' : 'OFF') + '</button></div>' +
       '<div class="set-row"><b>🖥️ ' + X('Low graphics', 'Grafik rendah') + '</b><button class="btn ghost small ' + (S.low ? 'on' : '') + '" id="s-low">' + (S.low ? '✔ ON' : 'OFF') + '</button></div>' +
       '<div class="set-row"><b>👻 ' + X('Scary moments', 'Detik seram') + '</b><div class="seg" id="s-scare">' + MF.SCARE.map(function (x, i) { return '<button class="btn ghost small ' + (effScare() === i ? 'on' : '') + '" data-n="' + i + '" ' + (i > cap ? 'disabled' : '') + '>' + MF.t(x) + '</button>'; }).join('') + '</div></div></div><button class="btn primary" id="s-back">◀ ' + X('Back', 'Kembali') + '</button>';
     bindLang(box); box.querySelectorAll('[data-lang]').forEach(function (b) { var f = b.onclick; b.onclick = function () { f(); showSettings(box); }; });
     $('s-sens').oninput = function () { S.sens = parseFloat(this.value); S.world.sens = S.sens; MF.store.set('mf.sens', S.sens); };
-    $('s-vol').oninput = function () { S.vol = parseFloat(this.value); MF.Sfx.setVolume(S.vol); MF.store.set('mf.vol', S.vol); };
+    $('s-vol').oninput = function () { S.vol = parseFloat(this.value); MF.Sfx.setVolume(S.vol); if (MF.Music) MF.Music.setVolume(S.vol); MF.store.set('mf.vol', S.vol); };
     $('s-low').onclick = function () { setLow(!S.low); showSettings(box); };
+    $('s-mus').onclick = function () { MF.Music.setOn(!MF.Music.on); showSettings(box); };
     box.querySelectorAll('#s-scare [data-n]').forEach(function (b) { b.onclick = function () { S.scarePref = parseInt(b.getAttribute('data-n'), 10); MF.store.set('mf.scare', S.scarePref); S.world.setScare(effScare()); showSettings(box); }; });
     $('s-back').onclick = function () { showOverlay('pause'); };
   }
+  /* ---- music + ambience follow what the student is doing ---- */
+  function wantMusic() {
+    var g = S.game, U = UI(); if (!g) return 'menu';
+    if (U && U.isOpen && U.isOpen('conclusion')) return 'tense';
+    var tl = g.timeLeft(); if (tl !== null && g.limit() > 0 && tl < g.limit() * 0.2) return 'tense';   // last 20% of the time
+    return 'explore';
+  }
+  function ambientOn() { MF.Sfx.ambient(true); if (MF.Music) { S.musicMode = wantMusic(); MF.Music.set(S.musicMode); } }
+  function ambientOff() { MF.Sfx.ambient(false); if (MF.Music) { S.musicMode = 'menu'; MF.Music.set('menu'); } }
   function setLow(on) { S.low = !!on; MF.store.set('mf.low', S.low); if (S.world) S.world.setLow(S.low); if (MF.UI.insp) MF.UI.insp.low = S.low; document.body.classList.toggle('lowfx', S.low); }
 
   /* ------------------------------------------------------------------ leaving a case */
@@ -309,14 +329,14 @@
     clearInterval(S.tickT); S.tickT = null; saveNow(); UI().closeAll();
     if (S.world) { try { S.world.dispose(); } catch (e) { /* ignore */ } S.world = null; }
     if (MF.UI.insp) { try { MF.UI.insp.dispose(); } catch (e) { /* ignore */ } MF.UI.insp = null; MF.UI._inspCanvas = null; }
-    MF.Sfx.ambient(false); S.game = null; $('ov').innerHTML = '';
+    ambientOff(); S.game = null; $('ov').innerHTML = '';
   }
   function finishCase() {
     S.finishing = true; sendProg(true); endGame(); S.finishing = false; var st = S.st || {};
     if (PREVIEW || st.mode === 'free') { show('s-archive'); renderArchive(); }
     else { show('s-wait'); renderWait(); $('s-wait').querySelector('h2').textContent = MF.tp({ en: '🎉 Case finished!', bm: '🎉 Kes selesai!' }); }
   }
-  function resetMine() { if (S.game) endGame(); S.pendingShare = []; ['009'].forEach(function (id) { MF.store.del(saveKey(id)); }); show('s-wait'); renderWait(); }
+  function resetMine() { if (S.game) endGame(); S.pendingShare = []; Object.keys(MF.cases || {}).forEach(function (id) { MF.store.del(saveKey(id)); }); show('s-wait'); renderWait(); }
 
   window.addEventListener('beforeunload', function () { saveNow(); if (S.link) { try { send({ t: 'bye', sid: S.sid }); } catch (e) { /* ignore */ } } });
   window.addEventListener('keydown', function (e) { if (e.code === 'Tab' && S.screen === 'game') e.preventDefault(); }, true);
