@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Midnight Files</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- Student page. Screens are drawn by mf-student.js -->
+<div id="s-join" class="screen"></div>
+<div id="s-wait" class="screen" hidden></div>
+<div id="s-archive" class="screen top" hidden></div>
+<div id="s-brief" class="screen top" hidden></div>
+
+<div id="game" hidden>
+  <canvas id="cv"></canvas>
+  <div id="vignette"></div><div id="flashfx"></div>
+  <div id="hud"></div>
+  <div id="ov"></div>
+</div>
+<div id="modals"></div>
+<div id="lock" class="lockscreen" hidden></div>
+
+<script src="three.min.js"></script>
+<script src="peerjs.min.js"></script>
+<script src="mf-core.js"></script>
+<script src="mf-validate.js"></script>
+<script src="mf-art.js"></script>
+<script src="mf-models.js"></script>
+<script src="mf-world.js"></script>
+<script src="mf-questions.js"></script>
+<script src="mf-game.js"></script>
+<script src="mf-ui.js"></script>
+<script src="mf-notebook.js"></script>
+<script src="case009.js"></script>
+<script src="archive.js"></script>
+<script src="mf-student.js"></script>
+</body>
+</html>
