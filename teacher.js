@@ -18,7 +18,7 @@
   var SUBJ = [['math', 'Maths · Matematik'], ['english', 'English · B. Inggeris'], ['science', 'Science · Sains'], ['geography', 'Geography · Geografi'], ['thinking', 'Critical thinking · Pemikiran kritis']];
 
   MF.store.set('mf.teacherKey', 'k' + Date.now());                               // lets THIS browser use the student preview link
-  var cfg = Object.assign({ mode: 'solo', case: '009', cases: ['009'], diff: 'standard', scare: null, subjects: SUBJ.map(function (s) { return s[0]; }), grade: 'all', timer: null, lang: 'both', sheet: '' }, MF.store.get(KEY, {}));
+  var cfg = Object.assign({ mode: 'solo', case: '009', cases: ['009'], diff: 'standard', scare: null, subjects: SUBJ.map(function (s) { return s[0]; }), grade: 'all', timer: null, lang: 'en', sheet: '' }, MF.store.get(KEY, {}));
   var T = { code: MF.store.get('mf.t.code') || MF.makeCode(), hub: null, phase: 'lobby', rev: 1, students: {}, byConn: {}, bank: [], bankMsg: '', ready: false, err: '' };
 
   /* ------------------------------------------------------------------ page */
@@ -38,7 +38,7 @@
     '<div class="t-row"><label>⏱ ' + X('Timer', 'Pemasa') + '</label><select id="c-timer" class="t-sel"><option value="">Default for level</option><option value="0">No timer · Tiada</option><option value="10">10 min</option><option value="15">15 min</option><option value="20">20 min</option><option value="25">25 min</option><option value="30">30 min</option><option value="40">40 min</option></select></div>' +
     '<div class="t-row"><label>🎓 ' + X('Grade', 'Gred') + '</label><select id="c-grade" class="t-sel"><option value="all">All · Semua</option>' + [1, 2, 3, 4, 5, 6, 7].map(function (g) { return '<option value="' + g + '">Grade ' + g + '</option>'; }).join('') + '</select></div>' +
     '<div class="t-row"><label>📚 ' + X('Subjects', 'Subjek') + '</label><div id="c-subj"></div></div>' +
-    '<div class="t-row"><label>🌐 ' + X('Language', 'Bahasa') + '</label><select id="c-lang" class="t-sel"><option value="both">BM + English</option><option value="bm">Bahasa Malaysia</option><option value="en">English</option></select></div></div>' +
+    '<div class="t-row"><label>🌐 ' + X('Language', 'Bahasa') + '</label><select id="c-lang" class="t-sel"><option value="en">English only</option><option value="both">BM + English (for Bahasa lessons)</option><option value="bm">Bahasa Malaysia only</option></select></div></div>' +
     '<div class="t-card"><h2>📊 ' + X('My questions (Google Sheet)', 'Soalan saya (Google Sheet)') + '</h2><p class="tip">' + X('Optional. Publish your sheet as CSV (File → Share → Publish to web → CSV) and paste the link.', 'Pilihan. Terbitkan sheet sebagai CSV (Fail → Kongsi → Terbit ke web → CSV) dan tampal pautan.') + '</p>' +
     '<input id="c-sheet" class="inp" style="font-size:.9em" placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?output=csv"><div class="t-ctrl"><button class="btn accent small" id="b-sheet">⬇ ' + X('Load', 'Muat') + '</button><button class="btn ghost small" id="b-tpl">📄 ' + X('Sample sheet', 'Contoh sheet') + '</button></div><div id="t-sheet" class="tip"></div></div>' +
     '<div class="t-card"><h2>📣 ' + X('Message to students', 'Mesej kepada murid') + '</h2><input id="c-msg" class="inp" style="font-size:.95em" maxlength="140" placeholder="Example: 5 minutes left!"><div class="t-ctrl"><button class="btn accent small" id="b-msg">📤 ' + X('Send', 'Hantar') + '</button></div></div>' +

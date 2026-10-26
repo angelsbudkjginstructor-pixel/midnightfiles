@@ -17,7 +17,7 @@
   var PREVIEW = P.get('preview') === '1' && !!MF.store.get('mf.teacherKey');  // teacher's own preview (key is set by teacher.html)
   var LOST_AFTER = 13000;                                                       // ms without a heartbeat = teacher is gone
 
-  MF.lang = MF.store.get('mf.lang', 'both');
+  MF.lang = 'en';   // default English only; the teacher's Language setting decides (BM + EN is for Bahasa lessons)
   var S = { name: '', code: '', link: null, st: null, lastPing: 0, joined: false, screen: 'join', game: null, world: null, uiOn: false, caseId: null,
     low: MF.store.get('mf.low', false), sens: MF.store.get('mf.sens', 0.0022), vol: MF.store.get('mf.vol', 0.55), scarePref: MF.store.get('mf.scare', 2),
     gate: null, ended: false, team: null, rev: -1, pendingShare: [], applyingShare: false, lastProg: 0, autoLow: false, sid: '' };
@@ -107,7 +107,8 @@
   /* ------------------------------------------------------------------ teacher state → what the student sees */
   function onState(st) {
     var first = !S.joined; S.st = st; if (first) S.lastMode = st.mode;
-    if (first) { S.joined = true; clearTimeout(S.joinTimer); S.lastPing = Date.now(); if (st.lang && !MF.store.get('mf.lang')) MF.lang = st.lang; }
+    if (first) { S.joined = true; clearTimeout(S.joinTimer); S.lastPing = Date.now(); }
+    if (st.lang && st.lang !== S.lastLang) { S.lastLang = st.lang; MF.lang = st.lang; MF.store.set('mf.lang', st.lang); if (!first) rerender(); }   // teacher's language choice always applies when it changes
     applyGate(); applyLive();
     if (first) { if (st.phase === 'open' || st.phase === 'paused') routeAfterOpen(); else { show('s-wait'); renderWait(); } return; }
     routeIfWaiting();
@@ -323,7 +324,7 @@
   /* ------------------------------------------------------------------ start */
   if (PREVIEW) {
     S.name = 'Preview'; S.joined = true; S.lastPing = Date.now() + 1e12;
-    S.st = { phase: 'open', mode: 'free', diff: P.get('diff') || 'standard', scare: P.get('scare') != null ? parseInt(P.get('scare'), 10) : null, subjects: null, grade: 'all', cases: null, timer: P.get('timer') != null ? parseInt(P.get('timer'), 10) : null, bank: [] };
+    S.st = { phase: 'open', mode: 'free', lang: (MF.store.get('mf.t.settings') || {}).lang || 'en', diff: P.get('diff') || 'standard', scare: P.get('scare') != null ? parseInt(P.get('scare'), 10) : null, subjects: null, grade: 'all', cases: null, timer: P.get('timer') != null ? parseInt(P.get('timer'), 10) : null, bank: [] };
     show('s-archive'); renderArchive();
   } else renderJoin();
   if (P.get('c') && !PREVIEW) { /* the link carries the room code; students only need to type a name */ }
