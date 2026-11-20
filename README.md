@@ -3,7 +3,7 @@
 A first-person 3D detective game for Chrome. Students play **only while the teacher page is open**.
 Permainan detektif 3D untuk Chrome. Murid hanya boleh bermain **semasa halaman cikgu dibuka**.
 
-Ready to play: seven cases. Scary thriller cases with a plot twist: 001 "The Missing Lunchbox", 002 "The Lights Go Out", 003 "The Painted Wall", 010 "The Last Bell", 011 "Room 13, Hotel Belladonna" and 012 "The Lighthouse at Skerry Point" (real ghost twist). Also 009 "The Birthday Party Mystery" (easy, not scary). The teacher chooses the Scare level (Off / Low / Medium); blood appears only as clues, never as gore. Cases 004–008 show "Coming soon".
+Ready to play: all 12 cases. Scary thrillers with a plot twist: 001 The Missing Lunchbox, 002 The Lights Go Out, 003 The Painted Wall, 004 The Library Whisper, 005 The Sports Day Trophy, 006 The Squeaky Staircase, 007 The Night Market Mix-up, 008 The Broken Science Lab, 010 The Last Bell, 011 Room 13 Hotel Belladonna, 012 The Lighthouse at Skerry Point. Also 009 The Birthday Party Mystery (easy, not scary). The teacher chooses the Scare level (Off / Low / Medium); blood appears only as clues, never as gore. Each case has a different culprit, motive, twist, setting and puzzles.
 
 Race to win (Solo and Teams modes): the first student (Solo) or first team (Teams) to accuse the right culprit with enough proof wins. Everyone else keeps playing for 2nd, 3rd... until the timer ends. A wrong accusation freezes that student (or the whole team) for 60 seconds. In Teams mode an accusation only goes in when every online team-mate votes YES. Places appear live in "Race results" on the teacher page and in the CSV ("New race" clears them; changing case or mode clears them too).
 
@@ -52,7 +52,7 @@ In teacher.html click **Sample CSV** to get the template. Columns:
 There are also 45 built-in questions (5 subjects x 3 grade bands).
 
 ## 5. Adding another case (for later)
-One case = one file (copy `case009.js`, change the data, call `MF.registerCase`). Add it to `index.html` and `teacher.html` script lists and set `ready:true` in `archive.js`. The built-in **validator** runs before each case starts and blocks a case that cannot be solved fairly.
+One case = one file (copy `case008.js`, which uses the small helper `mf-kit.js`; or `case009.js`, change the data, call `MF.registerCase`). Add it to `index.html` and `teacher.html` script lists and set `ready:true` in `archive.js`. The built-in **validator** runs before each case starts and blocks a case that cannot be solved fairly.
 
 ## 6. Important limits (please read)
 - **Teacher control is "soft".** A static website cannot stop a determined student who knows the teacher page address or opens the preview link on their own. It works well for a normal class.
@@ -61,4 +61,4 @@ One case = one file (copy `case009.js`, change the data, call `MF.registerCase`)
 - Chrome on a normal laptop/desktop is recommended. Not made for phones.
 - Tested: full play-through, teacher open/pause/close, lock + resume, save/resume, time-up + 5 min extension, wrong/weak answers (headless Chrome, local transport). The live PeerJS connection, real mouse pointer-lock and many students at once were not testable here — please do a 2-computer trial before class.
 
-Files: index.html (student), teacher.html, style.css, mf-*.js (engine), case009.js, archive.js, three.min.js, peerjs.min.js.
+Files: index.html (student), teacher.html, style.css, mf-*.js (engine), mf-kit.js, case001–012.js, archive.js, three.min.js, peerjs.min.js.
